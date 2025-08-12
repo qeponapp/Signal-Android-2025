@@ -49,7 +49,14 @@ val selectableVariants = listOf(
   "playStagingInstrumentation",
   "playStagingRelease",
   "websiteProdSpinner",
-  "websiteProdRelease"
+  "websiteProdRelease",
+  // --- tambahkan varian brand baru ---
+  "playProdQeponRelease",
+  // tambahkan debug kalau mau build cepat:
+  "playProdQeponDebug",
+  // kalau perlu channel website:
+  "websiteProdQeponRelease",
+  "websiteProdQeponDebug"
 )
 
 val signalBuildToolsVersion: String by rootProject.extra
@@ -87,7 +94,7 @@ android {
   compileSdkVersion = signalCompileSdkVersion
   ndkVersion = signalNdkVersion
 
-  flavorDimensions += listOf("distribution", "environment")
+  flavorDimensions += listOf("distribution", "environment", "brand")
   testBuildType = "instrumentation"
 
   android.bundle.language.enableSplit = false
@@ -254,6 +261,9 @@ android {
 
     testInstrumentationRunner = "org.thoughtcrime.securesms.testing.SignalTestRunner"
     testInstrumentationRunnerArguments["clearPackageData"] = "true"
+
+    // supaya modul/varian yang belum nyebut brand fallback ke "upstream"
+    missingDimensionStrategy("brand", "upstream")
   }
 
   buildTypes {
@@ -427,6 +437,35 @@ android {
       buildConfigField("String", "BUILD_ENVIRONMENT_TYPE", "\"Backup\"")
       buildConfigField("boolean", "MESSAGE_BACKUP_RESTORE_ENABLED", "true")
     }
+
+    // ===== BRAND dimension =====
+    create("upstream") {
+      dimension = "brand"
+      // default/no-op: biarkan applicationId & label bawaan
+      manifestPlaceholders["appAuthProviderAuthority"] = "${'$'}{applicationId}.provider"
+      manifestPlaceholders["partProviderAuthority"]    = "${'$'}{applicationId}.part"
+      manifestPlaceholders["blobProviderAuthority"]    = "${'$'}{applicationId}.blob"
+    }
+
+    create("qepon") {
+      dimension = "brand"
+
+      applicationId = "com.qepon.qepon"
+      versionNameSuffix = "-qepon"
+
+      // minimal branding
+      resValue("string", "app_name", "Qepon")
+
+      // placeholders untuk authorities berbasis applicationId flavor ini
+      manifestPlaceholders["appAuthProviderAuthority"] = "${'$'}{applicationId}.provider"
+      manifestPlaceholders["partProviderAuthority"]    = "${'$'}{applicationId}.part"
+      manifestPlaceholders["blobProviderAuthority"]    = "${'$'}{applicationId}.blob"
+      manifestPlaceholders["avatarProviderAuthority"]    = "${'$'}{applicationId}.avatar"
+
+      // (opsional) BuildConfig khusus endpointmu
+      // buildConfigField("String", "API_BASE_URL", "\"https://api.qepon.example\"")
+    }
+
   }
 
   lint {

@@ -1275,22 +1275,22 @@
         android:exported="false"/>
 
     <provider android:name=".providers.AvatarProvider"
-              android:authorities="${applicationId}.avatar"
+              android:authorities="${avatarProviderAuthority}"
               android:exported="false"
               android:grantUriPermissions="true" />
 
     <provider android:name=".providers.PartProvider"
               android:grantUriPermissions="true"
               android:exported="false"
-              android:authorities="${applicationId}.part" />
+              android:authorities="${partProviderAuthority}" />
 
     <provider android:name=".providers.BlobContentProvider"
-              android:authorities="${applicationId}.blob"
+              android:authorities="${blobProviderAuthority}"
               android:exported="false"
               android:grantUriPermissions="true" />
 
     <provider android:name="androidx.core.content.FileProvider"
-              android:authorities="${applicationId}.fileprovider"
+              android:authorities="${appAuthProviderAuthority}"
               android:exported="false"
               android:grantUriPermissions="true">
 
