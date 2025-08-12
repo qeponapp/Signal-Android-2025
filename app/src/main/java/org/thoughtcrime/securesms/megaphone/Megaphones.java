@@ -483,8 +483,17 @@ public final class Megaphones {
   }
 
   private static boolean shouldShowTurnOffCircumventionMegaphone() {
-    return AppDependencies.getSignalServiceNetworkAccess().isCensored() &&
-           SignalStore.misc().isServiceReachableWithoutCircumvention();
+    // Guard: hanya evaluasi setelah registrasi & ada nomor valid
+    if (!SignalStore.account().isRegistered()) {
+      return false;
+    }
+    String e164 = SignalStore.account().getE164();
+    if (TextUtils.isEmpty(e164)) {
+      return false;
+    }
+
+    return AppDependencies.getSignalServiceNetworkAccess().isCensored()
+           && SignalStore.misc().isServiceReachableWithoutCircumvention();
   }
 
   private static boolean shouldShowNotificationsMegaphone(@NonNull Context context) {
