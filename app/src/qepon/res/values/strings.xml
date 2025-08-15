@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Qepon</string>
+    <string name="welcome_title">Welcome to QePon</string>
+    <string name="welcome_subtitle">Let\'s Get Started for Secure Chat</string>
+    <string name="welcome_or">OR</string>
+
+    <string name="RegistrationActivity_continue">SIGN UP</string>
+    <string name="RegistrationActivity_restore">RESTORE</string>
+
 </resources>

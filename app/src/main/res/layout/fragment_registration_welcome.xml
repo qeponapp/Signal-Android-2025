@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/landing_bg">
 
     <ImageView
         android:id="@+id/image"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
         android:layout_margin="16dp"
         android:importantForAccessibility="no"
-        android:src="@drawable/welcome"
+        android:src="@drawable/splash_logo"
         app:layout_constraintBottom_toTopOf="@+id/title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -22,7 +24,8 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="40dp"
         android:gravity="center"
-        android:text="@string/RegistrationActivity_take_privacy_with_you_be_yourself_in_every_message"
+        android:text="@string/welcome_title"
+        android:textColor="@color/white"
         android:textAppearance="@style/Signal.Text.HeadlineMedium"
         app:layout_constraintBottom_toTopOf="@+id/welcome_terms_button"
         app:layout_constraintEnd_toEndOf="@+id/welcome_continue_button"
@@ -36,7 +39,7 @@
         android:layout_marginBottom="24dp"
         android:gravity="center"
         android:text="@string/RegistrationActivity_terms_and_privacy"
-        android:textColor="@color/signal_colorOnSurfaceVariant"
+        android:textColor="@color/white"
         app:layout_constraintBottom_toTopOf="@+id/welcome_continue_button"
         app:layout_constraintEnd_toEndOf="@+id/welcome_continue_button"
         app:layout_constraintStart_toStartOf="@+id/welcome_continue_button" />
@@ -47,9 +50,9 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
-        android:layout_marginBottom="17dp"
+        android:layout_marginBottom="16dp"
         app:circularProgressMaterialButton__label="@string/RegistrationActivity_continue"
-        app:layout_constraintBottom_toTopOf="@id/welcome_transfer_or_restore"
+        app:layout_constraintBottom_toTopOf="@+id/textView2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_goneMarginBottom="@dimen/registration_button_bottom_margin"
@@ -57,15 +60,37 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/welcome_transfer_or_restore"
-        style="@style/Signal.Widget.Button.Large.Secondary"
+        style="@style/Qepon.Widget.Button.Primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="32dp"
         android:text="@string/registration_activity__transfer_or_restore_account"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/welcome_continue_button"
         app:layout_constraintStart_toStartOf="@+id/welcome_continue_button" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/welcome_subtitle"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="@+id/title"
+        app:layout_constraintStart_toStartOf="@+id/title"
+        app:layout_constraintTop_toBottomOf="@+id/title" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/welcome_or"
+        android:textColor="@color/white"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/welcome_transfer_or_restore"
+        app:layout_constraintEnd_toEndOf="@+id/welcome_transfer_or_restore"
+        app:layout_constraintStart_toStartOf="@+id/welcome_transfer_or_restore" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
