@@ -636,6 +636,8 @@ dependencies {
   implementation(libs.androidx.camera.extensions)
   implementation(libs.androidx.camera.lifecycle)
   implementation(libs.androidx.camera.view)
+
+  implementation("net.lingala.zip4j:zip4j:2.11.5")
   implementation(libs.androidx.concurrent.futures)
   implementation(libs.androidx.autofill)
   implementation(libs.androidx.biometric)
