@@ -96,6 +96,8 @@ import org.thoughtcrime.securesms.util.navigation.safeNavigate
 import java.io.File
 import net.lingala.zip4j.io.outputstream.ZipOutputStream
 import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.AesKeyStrength
+import net.lingala.zip4j.model.enums.EncryptionMethod
 
 private val TAG = Log.tag(AppSettingsFragment::class.java)
 
@@ -723,6 +725,9 @@ private fun buildRecoveryPayload(self: BioRecipientState, isRegisteredAndUpToDat
 private fun writeEncryptedZip(outputStream: java.io.OutputStream, password: String, payload: org.json.JSONObject) {
   val zipParameters = ZipParameters().apply {
     fileNameInZip = "recovery.json"
+    isEncryptFiles = true
+    encryptionMethod = EncryptionMethod.AES
+    aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
   }
 
   ZipOutputStream(outputStream, password.toCharArray()).use { zos ->
