@@ -1,8 +1,12 @@
 package org.thoughtcrime.securesms.components.settings.app
 
+import android.net.Uri
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -15,17 +19,23 @@ import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +66,8 @@ import org.signal.core.ui.compose.Scaffolds
 import org.signal.core.ui.compose.SignalPreview
 import org.signal.core.ui.compose.horizontalGutters
 import org.signal.core.ui.compose.theme.SignalTheme
+import org.signal.core.util.Base64
+import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.avatar.AvatarImage
 import org.thoughtcrime.securesms.backup.v2.BackupRepository
@@ -74,12 +86,18 @@ import org.thoughtcrime.securesms.components.settings.app.subscription.completed
 import org.thoughtcrime.securesms.compose.ComposeFragment
 import org.thoughtcrime.securesms.compose.StatusBarColorNestedScrollConnection
 import org.thoughtcrime.securesms.database.model.InAppPaymentSubscriberRecord
+import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.profiles.ProfileName
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.util.CommunicationActions
 import org.thoughtcrime.securesms.util.SignalE164Util
 import org.thoughtcrime.securesms.util.Util
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
+import java.io.File
+import net.lingala.zip4j.io.outputstream.ZipOutputStream
+import net.lingala.zip4j.model.ZipParameters
+
+private val TAG = Log.tag(AppSettingsFragment::class.java)
 
 class AppSettingsFragment : ComposeFragment(), Callbacks {
 
@@ -180,6 +198,24 @@ private fun AppSettingsContent(
   lazyColumnModifier: Modifier = Modifier
 ) {
   val isRegisteredAndUpToDate by rememberUpdatedState(state.isRegisteredAndUpToDate())
+  val context = LocalContext.current
+  var showQeponDialog by remember { mutableStateOf(false) }
+  var exportUri by remember { mutableStateOf<Uri?>(null) }
+  var exportPathManual by remember { mutableStateOf("") }
+  var exportPassword by remember { mutableStateOf("") }
+  var exportPasswordConfirm by remember { mutableStateOf("") }
+  var exportError by remember { mutableStateOf<String?>(null) }
+  var isExporting by remember { mutableStateOf(false) }
+  val exportScope = rememberCoroutineScope()
+  val documentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+    if (uri != null) {
+      exportUri = uri
+      exportPathManual = uri.toString()
+      try {
+        context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+      } catch (_: SecurityException) { }
+    }
+  }
 
   Scaffolds.Settings(
     title = stringResource(R.string.text_secure_normal__menu_settings),
@@ -268,6 +304,20 @@ private fun AppSettingsContent(
           }
 
           BackupFailureState.NONE -> Unit
+        }
+
+        item {
+          Rows.TextRow(
+            text = stringResource(R.string.AppSettingsFragment__qepon_id),
+            icon = painterResource(R.drawable.symbol_qrcode_24),
+            onClick = {
+              exportPathManual = ""
+              exportPassword = ""
+              exportPasswordConfirm = ""
+              exportError = null
+              showQeponDialog = true
+            }
+          )
         }
 
         item {
@@ -520,6 +570,165 @@ private fun AppSettingsContent(
         }
       }
     }
+
+    if (showQeponDialog) {
+      androidx.compose.material3.AlertDialog(
+        onDismissRequest = { showQeponDialog = false },
+        title = { Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_title)) },
+        text = {
+          Column {
+            Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_description))
+            Spacer(modifier = Modifier.padding(vertical = 8.dp))
+            Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_path_label), style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              OutlinedTextField(
+                value = exportUri?.toString() ?: exportPathManual,
+                onValueChange = { exportPathManual = it },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+              )
+              TextButton(
+                onClick = {
+                  documentLauncher.launch("qepon-export.zip")
+                },
+                modifier = Modifier.padding(start = 8.dp)
+              ) {
+                Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_browse))
+              }
+            }
+
+            Spacer(modifier = Modifier.padding(vertical = 8.dp))
+            OutlinedTextField(
+              value = exportPassword,
+              onValueChange = { exportPassword = it },
+              label = { Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_password)) },
+              singleLine = true
+            )
+            Spacer(modifier = Modifier.padding(vertical = 4.dp))
+            OutlinedTextField(
+              value = exportPasswordConfirm,
+              onValueChange = { exportPasswordConfirm = it },
+              label = { Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_password_confirm)) },
+              singleLine = true
+            )
+
+            exportError?.let {
+              Spacer(modifier = Modifier.padding(vertical = 4.dp))
+              Text(text = it, color = MaterialTheme.colorScheme.error)
+            }
+          }
+        },
+        confirmButton = {
+          TextButton(
+            enabled = !isExporting,
+            onClick = {
+              exportError = null
+
+              if (exportPassword.isBlank() || exportPasswordConfirm.isBlank()) {
+                exportError = context.getString(R.string.AppSettingsFragment__qepon_id_error_password_blank)
+                return@TextButton
+              }
+
+              if (exportPassword != exportPasswordConfirm) {
+                exportError = context.getString(R.string.AppSettingsFragment__qepon_id_error_password_mismatch)
+                return@TextButton
+              }
+
+              if (exportUri == null && exportPathManual.isBlank()) {
+                exportError = context.getString(R.string.AppSettingsFragment__qepon_id_error_path_blank)
+                return@TextButton
+              }
+
+              exportScope.launch {
+                isExporting = true
+                try {
+                  val payload = buildRecoveryPayload(self, isRegisteredAndUpToDate)
+                  val targetUri = exportUri
+                  if (targetUri != null) {
+                    withContext(Dispatchers.IO) {
+                      context.contentResolver.openOutputStream(targetUri, "w")?.use { out ->
+                        writeEncryptedZip(out, exportPassword, payload)
+                      } ?: throw IllegalStateException("Cannot open output stream")
+                    }
+                    Toast.makeText(context, context.getString(R.string.AppSettingsFragment__qepon_id_export_success, targetUri.toString()), Toast.LENGTH_LONG).show()
+                    Log.i(TAG, "QePon export created at $targetUri")
+                  } else {
+                    val outputFile = File(exportPathManual)
+                    withContext(Dispatchers.IO) {
+                      outputFile.parentFile?.mkdirs()
+                      outputFile.outputStream().use { out ->
+                        writeEncryptedZip(out, exportPassword, payload)
+                      }
+                    }
+                    Toast.makeText(context, context.getString(R.string.AppSettingsFragment__qepon_id_export_success, outputFile.absolutePath), Toast.LENGTH_LONG).show()
+                    Log.i(TAG, "QePon export created at ${outputFile.absolutePath}")
+                  }
+                  showQeponDialog = false
+                } catch (e: Exception) {
+                  Log.w(TAG, "Failed to export QePon data", e)
+                  exportError = context.getString(R.string.AppSettingsFragment__qepon_id_export_failed, e.localizedMessage ?: "Unknown error")
+                } finally {
+                  isExporting = false
+                }
+              }
+            }
+          ) {
+            Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_export_button))
+          }
+        },
+        dismissButton = {
+          TextButton(onClick = { showQeponDialog = false }) {
+            Text(text = stringResource(R.string.AppSettingsFragment__qepon_id_close_button))
+          }
+        }
+      )
+    }
+  }
+}
+
+private fun buildRecoveryPayload(self: BioRecipientState, isRegisteredAndUpToDate: Boolean): org.json.JSONObject {
+  val account = SignalStore.account
+  val svr = SignalStore.svr
+  val encode = { bytes: ByteArray? -> bytes?.let { Base64.encodeWithoutPadding(it) } ?: "" }
+
+  val aciIdentity = runCatching { account.aciIdentityKey }.getOrNull()
+  val pniIdentity = runCatching { account.pniIdentityKey }.getOrNull()
+  val profileKeyBytes = runCatching { Recipient.self().profileKey }.getOrNull()
+
+  return org.json.JSONObject(
+    mapOf(
+      "username" to (account.username ?: ""),
+      "qeponId" to self.username,
+      "e164" to (account.e164 ?: ""),
+      "aci" to (account.aci?.toString() ?: ""),
+      "pni" to (account.pni?.toString() ?: ""),
+      "servicePassword" to (account.servicePassword ?: ""),
+      "registrationId" to account.registrationId,
+      "pniRegistrationId" to account.pniRegistrationId,
+      "identityAciPublic" to encode(aciIdentity?.publicKey?.serialize()),
+      "identityAciPrivate" to encode(aciIdentity?.privateKey?.serialize()),
+      "identityPniPublic" to encode(pniIdentity?.publicKey?.serialize()),
+      "identityPniPrivate" to encode(pniIdentity?.privateKey?.serialize()),
+      "profileKey" to encode(profileKeyBytes),
+      "accountEntropyPool" to account.accountEntropyPool.value,
+      "svr2AuthTokens" to svr.svr2AuthTokens,
+      "svr3AuthTokens" to svr.svr3AuthTokens,
+      "registrationLockToken" to (svr.registrationLockToken ?: ""),
+      "recoveryPassword" to (svr.recoveryPassword ?: ""),
+      "registeredAndUpToDate" to isRegisteredAndUpToDate
+    )
+  )
+}
+
+private fun writeEncryptedZip(outputStream: java.io.OutputStream, password: String, payload: org.json.JSONObject) {
+  val zipParameters = ZipParameters().apply {
+    fileNameInZip = "recovery.json"
+  }
+
+  ZipOutputStream(outputStream, password.toCharArray()).use { zos ->
+    zos.putNextEntry(zipParameters)
+    zos.write(payload.toString(2).toByteArray(Charsets.UTF_8))
+    zos.closeEntry()
   }
 }
 
@@ -602,16 +811,17 @@ private fun BioRow(
         )
       }
 
-      val prettyPhoneNumber = if (LocalInspectionMode.current) {
+      /*val prettyPhoneNumber = if (LocalInspectionMode.current) {
         self.e164
       } else {
         remember(self.e164) {
           SignalE164Util.prettyPrint(self.e164)
         }
-      }
+      }*/
 
       Text(
-        text = prettyPhoneNumber,
+        //text = prettyPhoneNumber,
+        text = self.e164,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
 
