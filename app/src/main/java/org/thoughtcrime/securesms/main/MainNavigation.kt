@@ -111,10 +111,8 @@ fun MainNavigationBar(
     windowInsets = WindowInsets(0, 0, 0, 0)
   ) {
     val entries = remember(state.isStoriesFeatureEnabled) {
-      if (state.isStoriesFeatureEnabled) {
-        MainNavigationListLocation.entries.filterNot { it == MainNavigationListLocation.ARCHIVE }
-      } else {
-        MainNavigationListLocation.entries.filterNot { it == MainNavigationListLocation.STORIES || it == MainNavigationListLocation.ARCHIVE }
+      MainNavigationListLocation.entries.filterNot {
+        it == MainNavigationListLocation.ARCHIVE || it == MainNavigationListLocation.STORIES
       }
     }
 
@@ -228,10 +226,8 @@ fun MainNavigationRail(
     }
   ) {
     val entries = remember(state.isStoriesFeatureEnabled) {
-      if (state.isStoriesFeatureEnabled) {
-        MainNavigationListLocation.entries.filterNot { it == MainNavigationListLocation.ARCHIVE }
-      } else {
-        MainNavigationListLocation.entries.filterNot { it == MainNavigationListLocation.STORIES || it == MainNavigationListLocation.ARCHIVE }
+      MainNavigationListLocation.entries.filterNot {
+        it == MainNavigationListLocation.ARCHIVE || it == MainNavigationListLocation.STORIES
       }
     }
 
