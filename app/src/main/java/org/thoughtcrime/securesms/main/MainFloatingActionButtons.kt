@@ -96,8 +96,11 @@ fun MainFloatingActionButtons(
       elevation = shadowElevation
     )
 
-    Box(
-      modifier = Modifier.align(primaryButtonAlignment)
+    AnimatedVisibility(
+      visible = destination != MainNavigationListLocation.SETTINGS && destination != MainNavigationListLocation.ARCHIVE,
+      modifier = Modifier.align(primaryButtonAlignment),
+      enter = slideInVertically(initialOffsetY = { it / 2 }),
+      exit = slideOutVertically(targetOffsetY = { it / 2 })
     ) {
       PrimaryActionButton(
         destination = destination,
@@ -170,17 +173,14 @@ private fun PrimaryActionButton(
   onCameraClick: (MainNavigationListLocation) -> Unit = {},
   onNewCallClick: () -> Unit = {}
 ) {
-  val onClick = remember(destination) {
-    when (destination) {
-      MainNavigationListLocation.ARCHIVE -> error("Not supported")
-      MainNavigationListLocation.CHATS -> onNewChatClick
-      MainNavigationListLocation.GROUPS -> onNewChatClick
-      MainNavigationListLocation.CONTACTS -> onNewChatClick
-      MainNavigationListLocation.CALLS -> onNewCallClick
-      MainNavigationListLocation.STORIES -> {
-        { onCameraClick(destination) }
-      }
-    }
+  val onClick: () -> Unit = when (destination) {
+    MainNavigationListLocation.ARCHIVE -> { { error("Not supported") } }
+    MainNavigationListLocation.CHATS -> { { onNewChatClick() } }
+    MainNavigationListLocation.GROUPS -> { { onNewChatClick() } }
+    MainNavigationListLocation.CONTACTS -> { { onNewChatClick() } }
+    MainNavigationListLocation.CALLS -> { { onNewCallClick() } }
+    MainNavigationListLocation.SETTINGS -> { {} }
+    MainNavigationListLocation.STORIES -> { { onCameraClick(destination) } }
   }
 
   MainFloatingActionButton(
@@ -194,6 +194,7 @@ private fun PrimaryActionButton(
           MainNavigationListLocation.GROUPS -> R.drawable.symbol_edit_24 to R.string.conversation_list_fragment__fab_content_description
           MainNavigationListLocation.CONTACTS -> R.drawable.symbol_edit_24 to R.string.conversation_list_fragment__fab_content_description
           MainNavigationListLocation.CALLS -> R.drawable.symbol_phone_plus_24 to R.string.CallLogFragment__start_a_new_call
+          MainNavigationListLocation.SETTINGS -> R.drawable.symbol_edit_24 to R.string.conversation_list_fragment__fab_content_description
           MainNavigationListLocation.STORIES -> R.drawable.symbol_camera_24 to R.string.conversation_list_fragment__open_camera_description
         }
 

@@ -10,6 +10,10 @@
         android:name="org.thoughtcrime.securesms.components.settings.app.AppSettingsFragment"
         android:label="app_settings_fragment"
         tools:layout="@layout/dsl_settings_fragment">
+        <argument
+            android:name="show_top_bar"
+            android:defaultValue="true"
+            app:argType="boolean" />
         <action
             android:id="@+id/action_appSettingsFragment_to_backupsSettingsFragment"
             app:destination="@id/backupsSettingsFragment"

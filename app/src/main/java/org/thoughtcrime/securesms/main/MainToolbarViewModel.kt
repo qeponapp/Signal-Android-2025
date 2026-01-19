@@ -94,6 +94,10 @@ class MainToolbarViewModel : ViewModel() {
     setToolbarMode(MainToolbarMode.FULL, destination = MainNavigationListLocation.CONTACTS, overwriteSearchMode = false)
   }
 
+  fun presentToolbarForSettingsFragment() {
+    setToolbarMode(MainToolbarMode.FULL, destination = MainNavigationListLocation.SETTINGS, overwriteSearchMode = true)
+  }
+
   fun presentToolbarForConversationListArchiveFragment() {
     setToolbarMode(MainToolbarMode.BASIC, destination = MainNavigationListLocation.CHATS)
   }

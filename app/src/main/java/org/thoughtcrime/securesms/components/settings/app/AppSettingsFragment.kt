@@ -20,12 +20,14 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -102,6 +104,9 @@ import net.lingala.zip4j.model.enums.EncryptionMethod
 private val TAG = Log.tag(AppSettingsFragment::class.java)
 
 class AppSettingsFragment : ComposeFragment(), Callbacks {
+  companion object {
+    const val ARG_SHOW_TOP_BAR = "show_top_bar"
+  }
 
   private val viewModel: AppSettingsViewModel by viewModels()
 
@@ -131,12 +136,15 @@ class AppSettingsFragment : ComposeFragment(), Callbacks {
       StatusBarColorNestedScrollConnection(requireActivity())
     }
 
+    val showTopBar = arguments?.getBoolean(ARG_SHOW_TOP_BAR, true) ?: true
+
     AppSettingsContent(
       self = self!!,
       state = state!!,
       bannerManager = bannerManager,
       callbacks = this,
-      lazyColumnModifier = Modifier.nestedScroll(nestedScrollConnection)
+      lazyColumnModifier = Modifier.nestedScroll(nestedScrollConnection),
+      showTopBar = showTopBar
     )
   }
 
@@ -197,7 +205,8 @@ private fun AppSettingsContent(
   state: AppSettingsState,
   bannerManager: BannerManager,
   callbacks: Callbacks,
-  lazyColumnModifier: Modifier = Modifier
+  lazyColumnModifier: Modifier = Modifier,
+  showTopBar: Boolean = true
 ) {
   val isRegisteredAndUpToDate by rememberUpdatedState(state.isRegisteredAndUpToDate())
   val context = LocalContext.current
@@ -219,12 +228,7 @@ private fun AppSettingsContent(
     }
   }
 
-  Scaffolds.Settings(
-    title = stringResource(R.string.text_secure_normal__menu_settings),
-    navigationContentDescription = stringResource(R.string.CallScreenTopBar__go_back),
-    navigationIcon = ImageVector.vectorResource(R.drawable.symbol_arrow_start_24),
-    onNavigationClick = callbacks::onNavigationClick
-  ) { contentPadding ->
+  val content: @Composable (PaddingValues) -> Unit = { contentPadding ->
     Column(
       modifier = Modifier.padding(contentPadding)
     ) {
@@ -685,6 +689,21 @@ private fun AppSettingsContent(
         }
       )
     }
+  }
+
+  if (showTopBar) {
+    Scaffolds.Settings(
+      title = stringResource(R.string.text_secure_normal__menu_settings),
+      navigationContentDescription = stringResource(R.string.CallScreenTopBar__go_back),
+      navigationIcon = ImageVector.vectorResource(R.drawable.symbol_arrow_start_24),
+      onNavigationClick = callbacks::onNavigationClick,
+      content = content
+    )
+  } else {
+    Scaffold(
+      contentWindowInsets = WindowInsets(0, 0, 0, 0),
+      content = content
+    )
   }
 }
 

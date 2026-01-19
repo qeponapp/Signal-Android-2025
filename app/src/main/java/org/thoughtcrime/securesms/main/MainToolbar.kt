@@ -90,6 +90,7 @@ interface MainToolbarCallback {
   fun onInviteFriendsClick()
   fun onFilterUnreadChatsClick()
   fun onClearUnreadChatsFilterClick()
+  fun onProfileClick()
   fun onSettingsClick()
   fun onNotificationProfileClick()
   fun onProxyClick()
@@ -111,6 +112,7 @@ interface MainToolbarCallback {
     override fun onInviteFriendsClick() = Unit
     override fun onFilterUnreadChatsClick() = Unit
     override fun onClearUnreadChatsFilterClick() = Unit
+    override fun onProfileClick() = Unit
     override fun onSettingsClick() = Unit
     override fun onNotificationProfileClick() = Unit
     override fun onProxyClick() = Unit
@@ -353,12 +355,25 @@ private fun PrimaryToolbar(
   callback: MainToolbarCallback,
   onSearchButtonPositioned: (Float) -> Unit
 ) {
+  if (state.destination == MainNavigationListLocation.SETTINGS) {
+    SettingsToolbar(state)
+    return
+  }
+
+  val isProfileDestination = state.destination == MainNavigationListLocation.CHATS ||
+    state.destination == MainNavigationListLocation.GROUPS ||
+    state.destination == MainNavigationListLocation.CONTACTS
+  val contentDescription = if (isProfileDestination) {
+    stringResource(R.string.CreateProfileActivity__profile)
+  } else {
+    stringResource(R.string.conversation_list_settings_shortcut)
+  }
+
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
       containerColor = state.toolbarColor ?: SignalTheme.colors.colorToolbar
     ),
     navigationIcon = {
-      val contentDescription = stringResource(R.string.conversation_list_settings_shortcut)
       Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -378,7 +393,7 @@ private fun PrimaryToolbar(
           modifier = Modifier
             .fillMaxSize()
             .clickable(
-              onClick = callback::onSettingsClick,
+              onClick = if (isProfileDestination) callback::onProfileClick else callback::onSettingsClick,
               interactionSource = interactionSource,
               indication = ripple(radius = 14.dp)
             )
@@ -440,10 +455,24 @@ private fun PrimaryToolbar(
           MainNavigationListLocation.CHATS -> ChatDropdownItems(state, callback, dismiss)
           MainNavigationListLocation.GROUPS -> ChatDropdownItems(state, callback, dismiss, showUnreadFilter = false)
           MainNavigationListLocation.CONTACTS -> ChatDropdownItems(state, callback, dismiss, showUnreadFilter = false)
+          MainNavigationListLocation.SETTINGS -> Unit
           MainNavigationListLocation.CALLS -> CallDropdownItems(state.callFilter, callback, dismiss)
           MainNavigationListLocation.STORIES -> StoryDropDownItems(callback, dismiss)
         }
       }
+    }
+  )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsToolbar(state: MainToolbarState) {
+  TopAppBar(
+    colors = TopAppBarDefaults.topAppBarColors(
+      containerColor = state.toolbarColor ?: SignalTheme.colors.colorToolbar
+    ),
+    title = {
+      Text(text = stringResource(R.string.ConversationListTabs__settings))
     }
   )
 }

@@ -58,6 +58,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import io.reactivex.rxjava3.subjects.PublishSubject
+import io.reactivex.rxjava3.subjects.Subject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -77,6 +79,9 @@ import org.thoughtcrime.securesms.components.compose.ConnectivityWarningBottomSh
 import org.thoughtcrime.securesms.components.compose.DeviceSpecificNotificationBottomSheet
 import org.thoughtcrime.securesms.components.settings.app.AppSettingsActivity
 import org.thoughtcrime.securesms.components.settings.app.AppSettingsActivity.Companion.manageSubscriptions
+import org.thoughtcrime.securesms.components.settings.app.SettingsHostFragment
+import org.thoughtcrime.securesms.components.settings.app.subscription.GooglePayComponent
+import org.thoughtcrime.securesms.components.settings.app.subscription.GooglePayRepository
 import org.thoughtcrime.securesms.components.settings.app.notifications.manual.NotificationProfileSelectionFragment
 import org.thoughtcrime.securesms.components.voice.VoiceNoteMediaController
 import org.thoughtcrime.securesms.components.voice.VoiceNoteMediaControllerOwner
@@ -124,6 +129,7 @@ import org.thoughtcrime.securesms.notifications.VitalsViewModel
 import org.thoughtcrime.securesms.notifications.profiles.NotificationProfile
 import org.thoughtcrime.securesms.notifications.profiles.NotificationProfiles
 import org.thoughtcrime.securesms.permissions.Permissions
+import org.thoughtcrime.securesms.profiles.manage.EditProfileActivity
 import org.thoughtcrime.securesms.profiles.manage.UsernameEditFragment
 import org.thoughtcrime.securesms.service.KeyCachingService
 import org.thoughtcrime.securesms.stories.Stories
@@ -145,7 +151,7 @@ import org.thoughtcrime.securesms.window.AppScaffold
 import org.thoughtcrime.securesms.window.WindowSizeClass
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
 
-class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner, MainNavigator.NavigatorProvider, Material3OnScrollHelperBinder, ConversationListFragment.Callback, CallLogFragment.Callback {
+class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner, MainNavigator.NavigatorProvider, Material3OnScrollHelperBinder, ConversationListFragment.Callback, CallLogFragment.Callback, GooglePayComponent {
 
   companion object {
     private val TAG = Log.tag(MainActivity::class)
@@ -170,6 +176,9 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
 
   private lateinit var mediaController: VoiceNoteMediaController
   private lateinit var navigator: MainNavigator
+
+  override val googlePayRepository: GooglePayRepository by lazy { GooglePayRepository(this) }
+  override val googlePayResultPublisher: Subject<GooglePayComponent.GooglePayResult> = PublishSubject.create()
 
   override val voiceNoteMediaController: VoiceNoteMediaController
     get() = mediaController
@@ -282,6 +291,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
           MainNavigationListLocation.CHATS -> toolbarViewModel.presentToolbarForConversationListFragment()
           MainNavigationListLocation.GROUPS -> toolbarViewModel.presentToolbarForGroupConversationListFragment()
           MainNavigationListLocation.CONTACTS -> toolbarViewModel.presentToolbarForContactsListFragment()
+          MainNavigationListLocation.SETTINGS -> toolbarViewModel.presentToolbarForSettingsFragment()
           MainNavigationListLocation.ARCHIVE -> toolbarViewModel.presentToolbarForConversationListArchiveFragment()
           MainNavigationListLocation.CALLS -> toolbarViewModel.presentToolbarForCallLogFragment()
           MainNavigationListLocation.STORIES -> toolbarViewModel.presentToolbarForStoriesLandingFragment()
@@ -382,6 +392,14 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
                     val state = key(destination) { rememberFragmentState() }
                     AndroidFragment(
                       clazz = SignalContactsFragment::class.java,
+                      fragmentState = state,
+                      modifier = Modifier.fillMaxSize()
+                    )
+                  }
+                  MainNavigationListLocation.SETTINGS -> {
+                    val state = key(destination) { rememberFragmentState() }
+                    AndroidFragment(
+                      clazz = SettingsHostFragment::class.java,
                       fragmentState = state,
                       modifier = Modifier.fillMaxSize()
                     )
@@ -545,6 +563,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
       MainNavigationListLocation.CHATS -> mainNavigationViewModel.onChatsSelected()
       MainNavigationListLocation.GROUPS -> mainNavigationViewModel.onGroupsSelected()
       MainNavigationListLocation.CONTACTS -> mainNavigationViewModel.onContactsSelected()
+      MainNavigationListLocation.SETTINGS -> mainNavigationViewModel.onSettingsSelected()
       MainNavigationListLocation.ARCHIVE -> mainNavigationViewModel.onArchiveSelected()
       MainNavigationListLocation.CALLS -> mainNavigationViewModel.onCallsSelected()
       MainNavigationListLocation.STORIES -> {
@@ -621,6 +640,8 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
         )
       )
     }
+
+    googlePayResultPublisher.onNext(GooglePayComponent.GooglePayResult(requestCode, resultCode, data))
   }
 
   override fun onFirstRender() {
@@ -809,6 +830,10 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
       toolbarViewModel.setChatFilter(ConversationFilter.OFF)
     }
 
+    override fun onProfileClick() {
+      startActivity(EditProfileActivity.getIntent(this@MainActivity))
+    }
+
     override fun onSettingsClick() {
       openSettings.launch(AppSettingsActivity.home(this@MainActivity))
     }
@@ -956,6 +981,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
         MainNavigationListLocation.CHATS -> mainNavigationViewModel.onChatsSelected()
         MainNavigationListLocation.GROUPS -> mainNavigationViewModel.onGroupsSelected()
         MainNavigationListLocation.CONTACTS -> mainNavigationViewModel.onContactsSelected()
+        MainNavigationListLocation.SETTINGS -> mainNavigationViewModel.onSettingsSelected()
         MainNavigationListLocation.CALLS -> mainNavigationViewModel.onCallsSelected()
         MainNavigationListLocation.STORIES -> mainNavigationViewModel.onStoriesSelected()
         MainNavigationListLocation.ARCHIVE -> mainNavigationViewModel.onArchiveSelected()

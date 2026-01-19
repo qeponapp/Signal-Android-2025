@@ -84,6 +84,10 @@ enum class MainNavigationListLocation(
     label = R.string.ConversationListTabs__calls,
     icon = R.raw.calls_28
   ),
+  SETTINGS(
+    label = R.string.ConversationListTabs__settings,
+    icon = R.raw.lottie_settings_android
+  ),
   STORIES(
     label = R.string.ConversationListTabs__stories,
     icon = R.raw.stories_28
@@ -127,6 +131,7 @@ fun MainNavigationBar(
         MainNavigationListLocation.CHATS -> state.chatsCount
         MainNavigationListLocation.GROUPS -> 0
         MainNavigationListLocation.CONTACTS -> 0
+        MainNavigationListLocation.SETTINGS -> 0
         MainNavigationListLocation.CALLS -> state.callsCount
         MainNavigationListLocation.STORIES -> state.storiesCount
       }
@@ -277,6 +282,7 @@ private fun BoxScope.NavigationRailCountIndicator(
       MainNavigationListLocation.CHATS -> state.chatsCount
       MainNavigationListLocation.GROUPS -> 0
       MainNavigationListLocation.CONTACTS -> 0
+      MainNavigationListLocation.SETTINGS -> 0
       MainNavigationListLocation.CALLS -> state.callsCount
       MainNavigationListLocation.STORIES -> state.storiesCount
     }
