@@ -73,6 +73,7 @@ import org.signal.core.ui.compose.Previews
 import org.signal.core.ui.compose.SignalPreview
 import org.signal.core.ui.compose.TextFields
 import org.signal.core.ui.compose.Tooltips
+import org.signal.core.ui.compose.theme.SignalTheme
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.avatar.AvatarImage
 import org.thoughtcrime.securesms.calls.log.CallLogFilter
@@ -228,7 +229,7 @@ private fun ActionModeToolbar(
 ) {
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = state.toolbarColor ?: MaterialTheme.colorScheme.surface
+      containerColor = state.toolbarColor ?: SignalTheme.colors.colorToolbar
     ),
     navigationIcon = {
       IconButtons.IconButton(onClick = {
@@ -302,7 +303,7 @@ private fun SearchToolbar(
         Text(text = stringResource(state.searchHint))
       },
       modifier = modifier
-        .background(color = state.toolbarColor ?: MaterialTheme.colorScheme.surface)
+        .background(color = state.toolbarColor ?: SignalTheme.colors.colorToolbar)
         .height(dimensionResource(R.dimen.signal_m3_toolbar_height))
         .padding(horizontal = 16.dp, vertical = 10.dp)
         .fillMaxWidth()
@@ -327,7 +328,7 @@ private fun ArchiveToolbar(
 ) {
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = state.toolbarColor ?: MaterialTheme.colorScheme.surface
+      containerColor = state.toolbarColor ?: SignalTheme.colors.colorToolbar
     ),
     navigationIcon = {
       IconButtons.IconButton(onClick = {
@@ -354,7 +355,7 @@ private fun PrimaryToolbar(
 ) {
   TopAppBar(
     colors = TopAppBarDefaults.topAppBarColors(
-      containerColor = state.toolbarColor ?: MaterialTheme.colorScheme.surface
+      containerColor = state.toolbarColor ?: SignalTheme.colors.colorToolbar
     ),
     navigationIcon = {
       val contentDescription = stringResource(R.string.conversation_list_settings_shortcut)
@@ -437,6 +438,7 @@ private fun PrimaryToolbar(
         when (state.destination) {
           MainNavigationListLocation.ARCHIVE -> Unit
           MainNavigationListLocation.CHATS -> ChatDropdownItems(state, callback, dismiss)
+          MainNavigationListLocation.GROUPS -> ChatDropdownItems(state, callback, dismiss, showUnreadFilter = false)
           MainNavigationListLocation.CALLS -> CallDropdownItems(state.callFilter, callback, dismiss)
           MainNavigationListLocation.STORIES -> StoryDropDownItems(callback, dismiss)
         }
@@ -619,7 +621,12 @@ private fun CallDropdownItems(callFilter: CallLogFilter, callback: MainToolbarCa
 }
 
 @Composable
-private fun ChatDropdownItems(state: MainToolbarState, callback: MainToolbarCallback, onOptionSelected: () -> Unit) {
+private fun ChatDropdownItems(
+  state: MainToolbarState,
+  callback: MainToolbarCallback,
+  onOptionSelected: () -> Unit,
+  showUnreadFilter: Boolean = true
+) {
   DropdownMenus.Item(
     text = {
       Text(
@@ -674,7 +681,7 @@ private fun ChatDropdownItems(state: MainToolbarState, callback: MainToolbarCall
     }
   )
 
-  if (state.chatFilter == ConversationFilter.OFF) {
+  if (showUnreadFilter && state.chatFilter == ConversationFilter.OFF) {
     DropdownMenus.Item(
       text = {
         Text(
@@ -687,7 +694,7 @@ private fun ChatDropdownItems(state: MainToolbarState, callback: MainToolbarCall
         onOptionSelected()
       }
     )
-  } else {
+  } else if (showUnreadFilter) {
     DropdownMenus.Item(
       text = {
         Text(

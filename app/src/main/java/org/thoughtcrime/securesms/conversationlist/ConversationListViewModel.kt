@@ -214,6 +214,15 @@ sealed class ConversationListViewModel(
     )
   }
 
+  fun setConversationFilter(filter: ConversationFilter, conversationFilterSource: ConversationFilterSource = ConversationFilterSource.DRAG) {
+    saveableState = saveableState.copy(
+      filterRequest = ConversationFilterRequest(
+        filter = filter,
+        source = conversationFilterSource
+      )
+    )
+  }
+
   private fun loadCurrentFolders() {
     viewModelScope.launch(Dispatchers.IO) {
       val folders = ChatFoldersRepository.getCurrentFolders()

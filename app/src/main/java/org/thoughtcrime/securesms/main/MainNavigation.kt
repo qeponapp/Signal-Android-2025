@@ -68,6 +68,10 @@ enum class MainNavigationListLocation(
     label = R.string.ConversationListTabs__chats,
     icon = R.raw.chats_28
   ),
+  GROUPS(
+    label = R.string.ConversationListTabs__groups,
+    icon = R.raw.chats_28
+  ),
   ARCHIVE(
     label = R.string.ConversationListTabs__chats,
     icon = R.raw.chats_28
@@ -119,6 +123,7 @@ fun MainNavigationBar(
       val badgeCount = when (destination) {
         MainNavigationListLocation.ARCHIVE -> error("Not supported")
         MainNavigationListLocation.CHATS -> state.chatsCount
+        MainNavigationListLocation.GROUPS -> 0
         MainNavigationListLocation.CALLS -> state.callsCount
         MainNavigationListLocation.STORIES -> state.storiesCount
       }
@@ -269,6 +274,7 @@ private fun BoxScope.NavigationRailCountIndicator(
     when (destination) {
       MainNavigationListLocation.ARCHIVE -> error("Not supported")
       MainNavigationListLocation.CHATS -> state.chatsCount
+      MainNavigationListLocation.GROUPS -> 0
       MainNavigationListLocation.CALLS -> state.callsCount
       MainNavigationListLocation.STORIES -> state.storiesCount
     }

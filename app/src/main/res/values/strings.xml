@@ -1892,20 +1892,20 @@
 
     <!-- GV2 invitation revokes -->
     <plurals name="MessageRecord_you_revoked_invites">
-      <item quantity="one">You revoked an invitation to the group.</item>
-      <item quantity="other">You revoked %1$d invitations to the group.</item>
+        <item quantity="one">You revoked an invitation to the group.</item>
+        <item quantity="other">You revoked %1$d invitations to the group.</item>
     </plurals>
     <plurals name="MessageRecord_s_revoked_invites">
-      <item quantity="one">%1$s revoked an invitation to the group.</item>
-      <item quantity="other">%1$s revoked %2$d invitations to the group.</item>
+        <item quantity="one">%1$s revoked an invitation to the group.</item>
+        <item quantity="other">%1$s revoked %2$d invitations to the group.</item>
     </plurals>
     <string name="MessageRecord_someone_declined_an_invitation_to_the_group">Someone declined an invitation to the group.</string>
     <string name="MessageRecord_you_declined_the_invitation_to_the_group">You declined the invitation to the group.</string>
     <string name="MessageRecord_s_revoked_your_invitation_to_the_group">%1$s revoked your invitation to the group.</string>
     <string name="MessageRecord_an_admin_revoked_your_invitation_to_the_group">An admin revoked your invitation to the group.</string>
     <plurals name="MessageRecord_d_invitations_were_revoked">
-      <item quantity="one">An invitation to the group was revoked.</item>
-      <item quantity="other">%1$d invitations to the group were revoked.</item>
+        <item quantity="one">An invitation to the group was revoked.</item>
+        <item quantity="other">%1$d invitations to the group were revoked.</item>
     </plurals>
 
     <!-- GV2 invitation acceptance -->
@@ -3254,6 +3254,7 @@
     <string name="SearchToolbar_search">Search</string>
     <!-- Hint when searching filtered chat content -->
     <string name="SearchToolbar_search_unread_chats">Search unread chats</string>
+    <string name="SearchToolbar_search_groups">Search groups</string>
     <string name="SearchToolbar_search_for_conversations_contacts_and_messages">Search for chats, contacts, and messages</string>
 
     <!-- Material3 Search Toolbar -->
@@ -5369,6 +5370,21 @@
     <string name="AppSettingsFragment__no_subscriber_id_set">No subscriber id set</string>
 
     <!-- AccountSettingsFragment -->
+    <string name="AppSettingsFragment__qepon_id">QePon ID</string>
+    <string name="AppSettingsFragment__qepon_id_title">Export QePon ID</string>
+    <string name="AppSettingsFragment__qepon_id_description">Export your QePon ID and account recovery data to a protected zip file.</string>
+    <string name="AppSettingsFragment__qepon_id_close_button">Close</string>
+    <string name="AppSettingsFragment__qepon_id_export_button">Export your QePon ID</string>
+    <string name="AppSettingsFragment__qepon_id_export_toast">Export flow coming soon.</string>
+    <string name="AppSettingsFragment__qepon_id_path_label">Export path</string>
+    <string name="AppSettingsFragment__qepon_id_browse">Browse</string>
+    <string name="AppSettingsFragment__qepon_id_password">Password</string>
+    <string name="AppSettingsFragment__qepon_id_password_confirm">Retype password</string>
+    <string name="AppSettingsFragment__qepon_id_error_password_blank">Password is required</string>
+    <string name="AppSettingsFragment__qepon_id_error_password_mismatch">Passwords do not match</string>
+    <string name="AppSettingsFragment__qepon_id_error_path_blank">Path is required</string>
+    <string name="AppSettingsFragment__qepon_id_export_success">Exported to %1$s</string>
+    <string name="AppSettingsFragment__qepon_id_export_failed">Export failed: %1$s</string>
     <string name="AccountSettingsFragment__account">Account</string>
     <string name="AccountSettingsFragment__youll_be_asked_less_frequently">You\'ll be asked less frequently over time</string>
     <string name="AccountSettingsFragment__require_your_signal_pin">Require your Signal PIN to register your phone number with Signal again</string>
@@ -5972,7 +5988,7 @@
     <!-- Dialog message when sending a story via an add to group story button -->
     <string name="MediaReviewFragment__add_to_the_group_story">Add to the group story \"%s\"</string>
     <!-- Positive dialog action when sending a story via an add to group story button -->
-    <string name ="MediaReviewFragment__add_to_story">Add to story</string>
+    <string name="MediaReviewFragment__add_to_story">Add to story</string>
     <string name="MediaReviewFragment__add_a_message">Add a message</string>
     <!-- Hint text inside of a compose box that is shown when the user is adding media while quoting a message. -->
     <string name="MediaReviewFragment__add_a_reply">Add a reply</string>
@@ -6545,6 +6561,8 @@
 
     <!-- Label for Chats tab in home app screen -->
     <string name="ConversationListTabs__chats">Chats</string>
+    <!-- Label for Groups tab in home app screen -->
+    <string name="ConversationListTabs__groups">Groups</string>
     <!-- Label for Calls tab in home app screen -->
     <string name="ConversationListTabs__calls">Calls</string>
     <!-- Label for Stories tab in home app screen -->

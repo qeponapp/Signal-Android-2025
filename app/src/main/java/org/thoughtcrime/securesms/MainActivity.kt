@@ -86,6 +86,7 @@ import org.thoughtcrime.securesms.conversation.v2.MotionEventRelay
 import org.thoughtcrime.securesms.conversation.v2.ShareDataTimestampViewModel
 import org.thoughtcrime.securesms.conversationlist.ConversationListArchiveFragment
 import org.thoughtcrime.securesms.conversationlist.ConversationListFragment
+import org.thoughtcrime.securesms.conversationlist.GroupConversationListFragment
 import org.thoughtcrime.securesms.conversationlist.RelinkDevicesReminderBottomSheetFragment
 import org.thoughtcrime.securesms.conversationlist.RestoreCompleteBottomSheetDialog
 import org.thoughtcrime.securesms.conversationlist.model.ConversationFilter
@@ -278,6 +279,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
       LaunchedEffect(mainNavigationState.selectedDestination) {
         when (mainNavigationState.selectedDestination) {
           MainNavigationListLocation.CHATS -> toolbarViewModel.presentToolbarForConversationListFragment()
+          MainNavigationListLocation.GROUPS -> toolbarViewModel.presentToolbarForGroupConversationListFragment()
           MainNavigationListLocation.ARCHIVE -> toolbarViewModel.presentToolbarForConversationListArchiveFragment()
           MainNavigationListLocation.CALLS -> toolbarViewModel.presentToolbarForCallLogFragment()
           MainNavigationListLocation.STORIES -> toolbarViewModel.presentToolbarForStoriesLandingFragment()
@@ -362,6 +364,14 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
                     val state = key(destination) { rememberFragmentState() }
                     AndroidFragment(
                       clazz = ConversationListFragment::class.java,
+                      fragmentState = state,
+                      modifier = Modifier.fillMaxSize()
+                    )
+                  }
+                  MainNavigationListLocation.GROUPS -> {
+                    val state = key(destination) { rememberFragmentState() }
+                    AndroidFragment(
+                      clazz = GroupConversationListFragment::class.java,
                       fragmentState = state,
                       modifier = Modifier.fillMaxSize()
                     )
@@ -523,6 +533,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
 
     when (startingTab) {
       MainNavigationListLocation.CHATS -> mainNavigationViewModel.onChatsSelected()
+      MainNavigationListLocation.GROUPS -> mainNavigationViewModel.onGroupsSelected()
       MainNavigationListLocation.ARCHIVE -> mainNavigationViewModel.onArchiveSelected()
       MainNavigationListLocation.CALLS -> mainNavigationViewModel.onCallsSelected()
       MainNavigationListLocation.STORIES -> {
@@ -932,6 +943,7 @@ class MainActivity : PassphraseRequiredActivity(), VoiceNoteMediaControllerOwner
     override fun invoke(location: MainNavigationListLocation) {
       when (location) {
         MainNavigationListLocation.CHATS -> mainNavigationViewModel.onChatsSelected()
+        MainNavigationListLocation.GROUPS -> mainNavigationViewModel.onGroupsSelected()
         MainNavigationListLocation.CALLS -> mainNavigationViewModel.onCallsSelected()
         MainNavigationListLocation.STORIES -> mainNavigationViewModel.onStoriesSelected()
         MainNavigationListLocation.ARCHIVE -> mainNavigationViewModel.onArchiveSelected()

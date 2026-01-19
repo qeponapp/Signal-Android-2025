@@ -2214,7 +2214,13 @@ class ThreadTable(context: Context, databaseHelper: SignalDatabase) : DatabaseTa
       //language=sql
       ConversationFilter.UNREAD -> " AND ($UNREAD_COUNT > 0 OR $READ == ${ReadStatus.FORCED_UNREAD.serialize()})"
       ConversationFilter.MUTED -> error("This filter selection isn't supported yet.")
-      ConversationFilter.GROUPS -> error("This filter selection isn't supported yet.")
+      ConversationFilter.GROUPS -> {
+        //language=sql
+        " AND ${TABLE_NAME}.${RECIPIENT_ID} IN (" +
+          "SELECT ${RecipientTable.ID} FROM ${RecipientTable.TABLE_NAME} " +
+          "WHERE ${RecipientTable.TYPE} IN (${RecipientTable.RecipientType.GV1.id}, ${RecipientTable.RecipientType.GV2.id})" +
+          ")"
+      }
     }
   }
 

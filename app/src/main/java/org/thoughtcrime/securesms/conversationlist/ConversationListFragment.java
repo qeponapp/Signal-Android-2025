@@ -49,6 +49,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -203,6 +204,7 @@ public class ConversationListFragment extends MainFragment implements Conversati
   private ConversationListFilterPullView         pullView;
   private AppBarLayout                           pullViewAppBarLayout;
   private ConversationListViewModel              viewModel;
+  private boolean                                fixedConversationFilter;
   private RecyclerView.Adapter                   activeAdapter;
   private ConversationListAdapter                defaultAdapter;
   private PagingMappingAdapter<ContactSearchKey> searchAdapter;
@@ -233,6 +235,18 @@ public class ConversationListFragment extends MainFragment implements Conversati
     return new ConversationListFragment();
   }
 
+  protected ConversationFilter getInitialConversationFilter() {
+    return ConversationFilter.OFF;
+  }
+
+  protected MainNavigationListLocation getListLocationForTabClick() {
+    return MainNavigationListLocation.CHATS;
+  }
+
+  protected ViewModelStoreOwner getViewModelStoreOwner() {
+    return requireActivity();
+  }
+
   @Override
   public void onAttach(@NonNull Context context) {
     super.onAttach(context);
@@ -250,6 +264,7 @@ public class ConversationListFragment extends MainFragment implements Conversati
     startupStopwatch        = new Stopwatch("startup");
     mainToolbarViewModel    = new ViewModelProvider(requireActivity()).get(MainToolbarViewModel.class);
     mainNavigationViewModel = new ViewModelProvider(requireActivity()).get(MainNavigationViewModel.class);
+    fixedConversationFilter = getInitialConversationFilter() != ConversationFilter.OFF;
   }
 
   @Override
@@ -318,47 +333,51 @@ public class ConversationListFragment extends MainFragment implements Conversati
     CollapsingToolbarLayout collapsingToolbarLayout = view.findViewById(R.id.collapsing_toolbar);
     int                     openHeight              = (int) DimensionUnit.DP.toPixels(FilterLerp.FILTER_OPEN_HEIGHT);
 
-    pullView.setOnFilterStateChanged((state, source) -> {
-      switch (state) {
-        case CLOSING:
-          viewModel.setFiltered(false, source);
-          mainToolbarViewModel.setChatFilter(ConversationFilter.OFF);
-          break;
-        case OPENING:
-          ViewUtil.setMinimumHeight(collapsingToolbarLayout, openHeight);
-          viewModel.setFiltered(true, source);
-          mainToolbarViewModel.setChatFilter(ConversationFilter.UNREAD);
-          break;
-        case OPEN_APEX:
-          if (source == ConversationFilterSource.DRAG) {
-            SignalStore.uiHints().incrementNeverDisplayPullToFilterTip();
-          }
-          break;
-        case CLOSE_APEX:
-          ViewUtil.setMinimumHeight(collapsingToolbarLayout, 0);
-          break;
-      }
-    });
+    if (fixedConversationFilter) {
+      pullViewAppBarLayout.setVisibility(View.GONE);
+    } else {
+      pullView.setOnFilterStateChanged((state, source) -> {
+        switch (state) {
+          case CLOSING:
+            viewModel.setFiltered(false, source);
+            mainToolbarViewModel.setChatFilter(ConversationFilter.OFF);
+            break;
+          case OPENING:
+            ViewUtil.setMinimumHeight(collapsingToolbarLayout, openHeight);
+            viewModel.setFiltered(true, source);
+            mainToolbarViewModel.setChatFilter(ConversationFilter.UNREAD);
+            break;
+          case OPEN_APEX:
+            if (source == ConversationFilterSource.DRAG) {
+              SignalStore.uiHints().incrementNeverDisplayPullToFilterTip();
+            }
+            break;
+          case CLOSE_APEX:
+            ViewUtil.setMinimumHeight(collapsingToolbarLayout, 0);
+            break;
+        }
+      });
 
-    pullView.setOnCloseClicked(this::onClearFilterClick);
+      pullView.setOnCloseClicked(this::onClearFilterClick);
 
-    ConversationFilterBehavior conversationFilterBehavior = Objects.requireNonNull((ConversationFilterBehavior) ((CoordinatorLayout.LayoutParams) pullViewAppBarLayout.getLayoutParams()).getBehavior());
-    conversationFilterBehavior.setCallback(new ConversationFilterBehavior.Callback() {
-      @Override
-      public void onStopNestedScroll() {
-        pullView.onUserDragFinished();
-      }
+      ConversationFilterBehavior conversationFilterBehavior = Objects.requireNonNull((ConversationFilterBehavior) ((CoordinatorLayout.LayoutParams) pullViewAppBarLayout.getLayoutParams()).getBehavior());
+      conversationFilterBehavior.setCallback(new ConversationFilterBehavior.Callback() {
+        @Override
+        public void onStopNestedScroll() {
+          pullView.onUserDragFinished();
+        }
 
-      @Override
-      public boolean canStartNestedScroll() {
-        return !isSearchOpen() || pullView.isCloseable();
-      }
-    });
+        @Override
+        public boolean canStartNestedScroll() {
+          return !isSearchOpen() || pullView.isCloseable();
+        }
+      });
 
-    pullViewAppBarLayout.addOnOffsetChangedListener((layout, verticalOffset) -> {
-      float progress = 1 - ((float) verticalOffset) / (-layout.getHeight());
-      pullView.onUserDrag(progress);
-    });
+      pullViewAppBarLayout.addOnOffsetChangedListener((layout, verticalOffset) -> {
+        float progress = 1 - ((float) verticalOffset) / (-layout.getHeight());
+        pullView.onUserDrag(progress);
+      });
+    }
 
     archiveDecoration = new ConversationListArchiveItemDecoration(new ColorDrawable(getResources().getColor(R.color.conversation_list_archive_background_end)));
     itemAnimator      = new ConversationListItemAnimator();
@@ -399,7 +418,7 @@ public class ConversationListFragment extends MainFragment implements Conversati
     requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), chatListBackHandler);
 
     lifecycleDisposable.bindTo(getViewLifecycleOwner());
-    lifecycleDisposable.add(mainNavigationViewModel.getTabClickEvents().filter(tab -> tab == MainNavigationListLocation.CHATS)
+    lifecycleDisposable.add(mainNavigationViewModel.getTabClickEvents().filter(tab -> tab == getListLocationForTabClick())
                                                    .subscribe(unused -> {
                                                      Log.d(TAG, "Scroll to top please");
                                                      LinearLayoutManager layoutManager            = (LinearLayoutManager) list.getLayoutManager();
@@ -692,9 +711,13 @@ public class ConversationListFragment extends MainFragment implements Conversati
     lifecycleDisposable.add(
         mainToolbarViewModel.getChatEventsFlowable().subscribe(event -> {
           if (event instanceof MainToolbarViewModel.Event.Chats.ApplyFilter) {
-            handleFilterUnreadChats();
+            if (!fixedConversationFilter) {
+              handleFilterUnreadChats();
+            }
           } else if (event instanceof MainToolbarViewModel.Event.Chats.ClearFilter) {
-            onClearFilterClick();
+            if (!fixedConversationFilter) {
+              onClearFilterClick();
+            }
           } else if (event instanceof MainToolbarViewModel.Event.Chats.CloseArchive) {
             mainNavigationViewModel.goTo(MainNavigationListLocation.CHATS);
           }
@@ -703,9 +726,15 @@ public class ConversationListFragment extends MainFragment implements Conversati
   }
 
   private void updateSearchToolbarHint(@NonNull ConversationFilterRequest conversationFilterRequest) {
-    mainToolbarViewModel.setSearchHint(
-        conversationFilterRequest.getFilter() == ConversationFilter.OFF ? R.string.SearchToolbar_search : R.string.SearchToolbar_search_unread_chats
-    );
+    int hintRes;
+    if (conversationFilterRequest.getFilter() == ConversationFilter.GROUPS) {
+      hintRes = R.string.SearchToolbar_search_groups;
+    } else if (conversationFilterRequest.getFilter() == ConversationFilter.UNREAD) {
+      hintRes = R.string.SearchToolbar_search_unread_chats;
+    } else {
+      hintRes = R.string.SearchToolbar_search;
+    }
+    mainToolbarViewModel.setSearchHint(hintRes);
   }
 
   private void initializeVoiceNotePlayer() {
@@ -855,7 +884,12 @@ public class ConversationListFragment extends MainFragment implements Conversati
 
   private void initializeViewModel() {
     Class<? extends ConversationListViewModel> viewModelClass = isArchived() ? ConversationListViewModel.ArchivedConversationListViewModel.class : ConversationListViewModel.UnarchivedConversationListViewModel.class;
-    viewModel = new ViewModelProvider(requireActivity(), new ConversationListViewModel.Factory(isArchived())).get(viewModelClass);
+    viewModel = new ViewModelProvider(getViewModelStoreOwner(), new ConversationListViewModel.Factory(isArchived())).get(viewModelClass);
+
+    ConversationFilter initialFilter = getInitialConversationFilter();
+    if (initialFilter != ConversationFilter.OFF && viewModel.getConversationFilterRequest().getFilter() != initialFilter) {
+      viewModel.setConversationFilter(initialFilter, ConversationFilterSource.DRAG);
+    }
 
     lifecycleDisposable.add(viewModel.getConversationsState().subscribe(this::onConversationListChanged));
     lifecycleDisposable.add(viewModel.getHasNoConversations().subscribe(this::updateEmptyState));
@@ -1817,5 +1851,3 @@ public class ConversationListFragment extends MainFragment implements Conversati
     void onMultiSelectFinished();
   }
 }
-
-

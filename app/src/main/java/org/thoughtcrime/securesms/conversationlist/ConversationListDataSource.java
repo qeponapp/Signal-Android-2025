@@ -61,7 +61,7 @@ abstract class ConversationListDataSource implements PagedDataSource<Long, Conve
     long startTime = System.currentTimeMillis();
     int  count     = getTotalCount();
 
-    if (conversationFilter != ConversationFilter.OFF) {
+    if (shouldShowConversationFilterFooter()) {
       count += 1;
     }
 
@@ -111,7 +111,7 @@ abstract class ConversationListDataSource implements PagedDataSource<Long, Conve
     SignalTrace.endSection();
 
     if (conversations.isEmpty() && start == 0 && length == 1) {
-      if (conversationFilter != ConversationFilter.OFF) {
+      if (shouldShowConversationFilterFooter()) {
         return Collections.singletonList(new Conversation(ConversationReader.buildThreadRecordForType(Conversation.Type.CONVERSATION_FILTER_EMPTY,
                                                                                                       0,
                                                                                                       showConversationFooterTip)));
@@ -125,6 +125,10 @@ abstract class ConversationListDataSource implements PagedDataSource<Long, Conve
     } else {
       return conversations;
     }
+  }
+
+  protected boolean shouldShowConversationFilterFooter() {
+    return conversationFilter == ConversationFilter.UNREAD;
   }
 
   @Override
@@ -160,7 +164,7 @@ abstract class ConversationListDataSource implements PagedDataSource<Long, Conve
       Cursor       cursor  = threadTable.getArchivedConversationList(conversationFilter, offset, limit);
 
       cursors.add(cursor);
-      if (offset + limit >= totalCount && totalCount > 0 && conversationFilter != ConversationFilter.OFF) {
+      if (offset + limit >= totalCount && totalCount > 0 && shouldShowConversationFilterFooter()) {
         MatrixCursor conversationFilterFooter = new MatrixCursor(ConversationReader.FILTER_FOOTER_COLUMNS);
         conversationFilterFooter.addRow(ConversationReader.createConversationFilterFooterRow(showConversationFooterTip));
         cursors.add(conversationFilterFooter);
@@ -275,7 +279,7 @@ abstract class ConversationListDataSource implements PagedDataSource<Long, Conve
     }
 
     boolean hasConversationFilterFooter() {
-      return totalCount >= 1 && conversationFilter != ConversationFilter.OFF;
+      return totalCount >= 1 && shouldShowConversationFilterFooter();
     }
   }
 }
