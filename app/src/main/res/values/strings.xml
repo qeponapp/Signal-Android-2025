@@ -6563,6 +6563,8 @@
     <string name="ConversationListTabs__chats">Chats</string>
     <!-- Label for Groups tab in home app screen -->
     <string name="ConversationListTabs__groups">Groups</string>
+    <!-- Label for Contacts tab in home app screen -->
+    <string name="ConversationListTabs__contacts">Contacts</string>
     <!-- Label for Calls tab in home app screen -->
     <string name="ConversationListTabs__calls">Calls</string>
     <!-- Label for Stories tab in home app screen -->

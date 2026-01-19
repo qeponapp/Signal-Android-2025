@@ -72,6 +72,10 @@ enum class MainNavigationListLocation(
     label = R.string.ConversationListTabs__groups,
     icon = R.raw.chats_28
   ),
+  CONTACTS(
+    label = R.string.ConversationListTabs__contacts,
+    icon = R.raw.chats_28
+  ),
   ARCHIVE(
     label = R.string.ConversationListTabs__chats,
     icon = R.raw.chats_28
@@ -122,6 +126,7 @@ fun MainNavigationBar(
         MainNavigationListLocation.ARCHIVE -> error("Not supported")
         MainNavigationListLocation.CHATS -> state.chatsCount
         MainNavigationListLocation.GROUPS -> 0
+        MainNavigationListLocation.CONTACTS -> 0
         MainNavigationListLocation.CALLS -> state.callsCount
         MainNavigationListLocation.STORIES -> state.storiesCount
       }
@@ -271,6 +276,7 @@ private fun BoxScope.NavigationRailCountIndicator(
       MainNavigationListLocation.ARCHIVE -> error("Not supported")
       MainNavigationListLocation.CHATS -> state.chatsCount
       MainNavigationListLocation.GROUPS -> 0
+      MainNavigationListLocation.CONTACTS -> 0
       MainNavigationListLocation.CALLS -> state.callsCount
       MainNavigationListLocation.STORIES -> state.storiesCount
     }

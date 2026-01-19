@@ -439,6 +439,7 @@ private fun PrimaryToolbar(
           MainNavigationListLocation.ARCHIVE -> Unit
           MainNavigationListLocation.CHATS -> ChatDropdownItems(state, callback, dismiss)
           MainNavigationListLocation.GROUPS -> ChatDropdownItems(state, callback, dismiss, showUnreadFilter = false)
+          MainNavigationListLocation.CONTACTS -> ChatDropdownItems(state, callback, dismiss, showUnreadFilter = false)
           MainNavigationListLocation.CALLS -> CallDropdownItems(state.callFilter, callback, dismiss)
           MainNavigationListLocation.STORIES -> StoryDropDownItems(callback, dismiss)
         }

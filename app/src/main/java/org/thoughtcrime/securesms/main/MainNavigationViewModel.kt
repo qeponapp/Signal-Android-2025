@@ -191,6 +191,10 @@ class MainNavigationViewModel(
     onTabSelected(MainNavigationListLocation.GROUPS)
   }
 
+  fun onContactsSelected() {
+    onTabSelected(MainNavigationListLocation.CONTACTS)
+  }
+
   fun onStoriesSelected() {
     onTabSelected(MainNavigationListLocation.STORIES)
   }

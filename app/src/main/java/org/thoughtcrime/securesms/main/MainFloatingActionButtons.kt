@@ -137,7 +137,9 @@ private fun BoxScope.SecondaryActionButton(
   }
 
   AnimatedVisibility(
-    visible = destination == MainNavigationListLocation.CHATS || destination == MainNavigationListLocation.GROUPS,
+    visible = destination == MainNavigationListLocation.CHATS ||
+      destination == MainNavigationListLocation.GROUPS ||
+      destination == MainNavigationListLocation.CONTACTS,
     modifier = Modifier.align(secondaryButtonAlignment),
     enter = slideInVertically(initialOffsetY = offsetYProvider),
     exit = slideOutVertically(targetOffsetY = offsetYProvider)
@@ -173,6 +175,7 @@ private fun PrimaryActionButton(
       MainNavigationListLocation.ARCHIVE -> error("Not supported")
       MainNavigationListLocation.CHATS -> onNewChatClick
       MainNavigationListLocation.GROUPS -> onNewChatClick
+      MainNavigationListLocation.CONTACTS -> onNewChatClick
       MainNavigationListLocation.CALLS -> onNewCallClick
       MainNavigationListLocation.STORIES -> {
         { onCameraClick(destination) }
@@ -189,6 +192,7 @@ private fun PrimaryActionButton(
           MainNavigationListLocation.ARCHIVE -> error("Not supported")
           MainNavigationListLocation.CHATS -> R.drawable.symbol_edit_24 to R.string.conversation_list_fragment__fab_content_description
           MainNavigationListLocation.GROUPS -> R.drawable.symbol_edit_24 to R.string.conversation_list_fragment__fab_content_description
+          MainNavigationListLocation.CONTACTS -> R.drawable.symbol_edit_24 to R.string.conversation_list_fragment__fab_content_description
           MainNavigationListLocation.CALLS -> R.drawable.symbol_phone_plus_24 to R.string.CallLogFragment__start_a_new_call
           MainNavigationListLocation.STORIES -> R.drawable.symbol_camera_24 to R.string.conversation_list_fragment__open_camera_description
         }

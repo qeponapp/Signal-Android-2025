@@ -90,6 +90,10 @@ class MainToolbarViewModel : ViewModel() {
     setToolbarMode(MainToolbarMode.FULL, destination = MainNavigationListLocation.GROUPS, overwriteSearchMode = false)
   }
 
+  fun presentToolbarForContactsListFragment() {
+    setToolbarMode(MainToolbarMode.FULL, destination = MainNavigationListLocation.CONTACTS, overwriteSearchMode = false)
+  }
+
   fun presentToolbarForConversationListArchiveFragment() {
     setToolbarMode(MainToolbarMode.BASIC, destination = MainNavigationListLocation.CHATS)
   }
