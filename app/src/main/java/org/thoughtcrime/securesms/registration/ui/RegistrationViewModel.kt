@@ -23,6 +23,7 @@ import org.signal.core.util.Base64
 import org.signal.core.util.Stopwatch
 import org.signal.core.util.isNotNullOrBlank
 import org.signal.core.util.logging.Log
+import org.signal.libsignal.zkgroup.profiles.ProfileKey
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.jobs.MultiDeviceProfileContentUpdateJob
 import org.thoughtcrime.securesms.jobs.MultiDeviceProfileKeyUpdateJob
@@ -36,10 +37,14 @@ import org.thoughtcrime.securesms.pin.SvrRepository
 import org.thoughtcrime.securesms.pin.SvrWrongPinException
 import org.thoughtcrime.securesms.registration.data.AccountRegistrationResult
 import org.thoughtcrime.securesms.registration.data.LocalRegistrationMetadataUtil
+import org.thoughtcrime.securesms.registration.data.QeponAccountRegistrationResult
+import org.thoughtcrime.securesms.registration.data.QeponLocalRegistrationMetadataUtil
+import org.thoughtcrime.securesms.registration.data.RecoveryData
 import org.thoughtcrime.securesms.registration.data.RegistrationData
 import org.thoughtcrime.securesms.registration.data.RegistrationRepository
 import org.thoughtcrime.securesms.registration.data.network.BackupAuthCheckResult
 import org.thoughtcrime.securesms.registration.data.network.Challenge
+import org.thoughtcrime.securesms.registration.data.network.QeponRegisterAccountResult
 import org.thoughtcrime.securesms.registration.data.network.RegisterAccountResult
 import org.thoughtcrime.securesms.registration.data.network.RegistrationSessionCheckResult
 import org.thoughtcrime.securesms.registration.data.network.RegistrationSessionCreationResult
@@ -60,7 +65,6 @@ import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequ
 import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequestResult.SubmitVerificationCodeRateLimited
 import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequestResult.Success
 import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequestResult.TokenNotAccepted
-import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequestResult.UnknownError
 import org.thoughtcrime.securesms.registration.util.RegistrationUtil
 import org.thoughtcrime.securesms.registration.viewmodel.SvrAuthCredentialSet
 import org.thoughtcrime.securesms.util.RemoteConfig
@@ -425,8 +429,10 @@ class RegistrationViewModel : ViewModel() {
   }
 
   fun submitCaptchaToken(context: Context) {
+    Log.e(TAG, "submitCaptchaToken() 1")
     val e164 = getCurrentE164() ?: throw IllegalStateException("Can't submit captcha token if no phone number is set!")
-    val captchaToken = store.value.captchaToken ?: throw IllegalStateException("Can't submit captcha token if no captcha token is set!")
+    //val captchaToken = store.value.captchaToken ?: throw IllegalStateException("Can't submit captcha token if no captcha token is set!")
+    val captchaToken = "noop.noop.registration.dummy"
 
     store.update {
       it.copy(captchaToken = null)
@@ -543,6 +549,7 @@ class RegistrationViewModel : ViewModel() {
       is NoSuchSession -> Log.i(TAG, "Received NoSuchSession.", sessionResult.getCause())
 
       is AlreadyVerified -> Log.i(TAG, "Received AlreadyVerified", sessionResult.getCause())
+      else -> {}
     }
 
     store.update {
@@ -604,6 +611,86 @@ class RegistrationViewModel : ViewModel() {
     return false
   }
 
+  /**
+   * @return whether the request was successful and execution should continue
+   */
+  private suspend fun handleQeponRegistrationResult(context: Context, registrationData: RegistrationData, registrationResult: QeponRegisterAccountResult): Boolean {
+    Log.v(TAG, "handleRegistrationResult()")
+    //var stayInProgress = false
+    return when (registrationResult) {
+      is QeponRegisterAccountResult.Success -> {
+        Log.e(TAG, "Firhat: Sukses")
+        store.update {
+          it.copy(
+            registrationCheckpoint = RegistrationCheckpoint.SERVICE_REGISTRATION_COMPLETED,
+            qeponIdRegistered = true,
+            qeponRegistrationResult = registrationResult // ✅ tambahkan ini
+
+          )
+        }
+        onSuccessfulQeponRegistration(context, registrationData, registrationResult.accountRegistrationResult, false)
+        true
+      }
+
+      is QeponRegisterAccountResult.UnknownError -> {
+        Log.e(TAG, "Firhat: error")
+        Log.i(TAG, "Received error when trying to register!", registrationResult.getCause())
+        store.update { it.copy(inProgress = false) }
+        false
+      }
+
+      else -> {
+        Log.e(TAG, "Firhat: other")
+        Log.w(TAG, "Unhandled registration result type: ${registrationResult::class.simpleName}")
+        store.update { it.copy(inProgress = false) }
+        false
+      }
+    }
+  }
+
+  private suspend fun handleQeponRecoveryResult(context: Context, recoveryData: RecoveryData): Boolean {
+    Log.v(TAG, "handleRegistrationResult()")
+    //var stayInProgress = false
+    Log.e(TAG, "Firhat: Sukses")
+    try {
+      store.update {
+        it.copy(
+          registrationCheckpoint = RegistrationCheckpoint.SERVICE_REGISTRATION_COMPLETED,
+          qeponIdRegistered = true,
+          //qeponRegistrationResult = registrationResult // ✅ tambahkan ini
+
+        )
+      }
+      onSuccessfulQeponRecovery(context, recoveryData, false)
+      return true
+    }catch (error: Exception) {
+      return false
+    }
+
+  }
+
+  fun clearQeponRegistrationResult() {
+    store.update {
+      it.copy(qeponRegistrationResult = null)
+    }
+  }
+
+  fun restoreStateRecovery() {
+    store.update {
+      //it.copy(registrationCheckpoint = RegistrationCheckpoint.LOCAL_REGISTRATION_COMPLETE)
+      it.copy(registrationCheckpoint = RegistrationCheckpoint.SERVICE_REGISTRATION_COMPLETED)
+      it.copy(registrationCheckpoint = RegistrationCheckpoint.QEPON_ID_VERIFIED)
+    }
+  }
+
+  fun forceCheckpointToLocalComplete() {
+    store.update {
+      it.copy(registrationCheckpoint = RegistrationCheckpoint.SERVICE_REGISTRATION_COMPLETED)
+      it.copy(registrationCheckpoint = RegistrationCheckpoint.QEPON_ID_VERIFIED)
+      it.copy(registrationCheckpoint = RegistrationCheckpoint.LOCAL_REGISTRATION_COMPLETE)
+    }
+  }
+
   private fun handleGenericError(cause: Throwable) {
     Log.w(TAG, "Encountered unknown error!", cause)
     store.update {
@@ -620,6 +707,108 @@ class RegistrationViewModel : ViewModel() {
   fun setUserSkippedReRegisterFlow(value: Boolean) {
     store.update {
       it.copy(userSkippedReregistration = value, canSkipSms = !value)
+    }
+  }
+
+  fun generateRandomElevenDigitNumberWithPrefix(): String {
+    val random = (100_000_000_00..999_999_999_99).random()
+    Log.v("MAMAT", random.toString())
+    android.util.Log.e("MAMAT", "+628$random")
+
+    return "+628$random"
+  }
+
+  fun registerQeponId(context: Context, qeponIds: List<String>){
+    setInProgress(true)
+
+    viewModelScope.launch(context = coroutineExceptionHandler) {
+      try {
+        Log.v(TAG, "verifyReRegisterInternal()")
+
+        updateFcmToken(context)
+        //val registrationData = getRegistrationData()
+
+        val fcmToken = getCurrentFCMToken()
+        Log.e("FCM", fcmToken)
+        val recoveryPassword ="recoveryPassword"
+        val e164 = generateRandomElevenDigitNumberWithPrefix()
+        android.util.Log.e(TAG, "E164: $e164")
+        val registrationData = RegistrationData("000000", e164, password, RegistrationRepository.getRegistrationId(), RegistrationRepository.getProfileKey(e164), fcmToken, RegistrationRepository.getPniRegistrationId(), recoveryPassword)
+
+        Log.d(TAG, "Registration lock not enabled, generating master key and registering account.")
+        var registrationResult: QeponRegisterAccountResult = RegistrationRepository.registerAccountQepon(context = context, usernameHashes = qeponIds, registrationData = registrationData)
+
+        handleQeponRegistrationResult(context, registrationData, registrationResult)
+      }catch (error: Exception){
+        Log.e("TAG", "Error")
+        Log.e("TAG", error.toString())
+      } finally {
+        setInProgress(false)
+      }
+    }
+
+  }
+
+  fun restoreQeponId(
+    context: Context,
+    servicePassword: String,
+    recoveryPassword: String,
+    e164: String,
+    registrationId: Int,
+    profileKey: ByteArray?,
+    pniRegistrationId: Int,
+    aci: String,
+    pni: String
+                     ){
+    setInProgress(true)
+
+    viewModelScope.launch(context = coroutineExceptionHandler) {
+      try {
+        Log.v(TAG, "restoreQeponId()")
+
+        updateFcmToken(context)
+        //val registrationData = getRegistrationData()
+
+        val fcmToken = getCurrentFCMToken()
+        Log.e("FCM", fcmToken)
+        //val e164 = generateRandomElevenDigitNumberWithPrefix()
+        //Log.v(TAG, "E164: $e164")
+        val recoveryData = RecoveryData(
+          "000000",
+          e164,
+          servicePassword,
+          registrationId,
+          profileKey,
+          fcmToken,
+          pniRegistrationId,
+          recoveryPassword,
+          pni,
+          aci
+        )
+
+        //Log.d(TAG, "Registration lock not enabled, generating master key and registering account.")
+        //var registrationResult: QeponRegisterAccountResult = RegistrationRepository.registerAccountQepon(context = context, usernameHashes = qeponIds, registrationData = registrationData)
+        handleQeponRecoveryResult(context, recoveryData)
+
+      }catch (error: Exception){
+        Log.e("TAG", "Error")
+        Log.e("TAG", error.toString())
+      } finally {
+        setInProgress(false)
+      }
+    }
+
+  }
+
+  fun setMatchedQeponId(id: String) {
+    store.update {
+      it.copy(matchedQeponId = id)
+    }
+  }
+
+  fun clearMatchedQeponId() {
+    store.update {
+      it.copy(matchedQeponId = null)
     }
   }
 
@@ -897,6 +1086,74 @@ class RegistrationViewModel : ViewModel() {
     }
   }
 
+  private suspend fun onSuccessfulQeponRegistration(context: Context, registrationData: RegistrationData, remoteResult: QeponAccountRegistrationResult, reglockEnabled: Boolean) {
+    Log.v(TAG, "onSuccessfulRegistration()")
+    val metadata = QeponLocalRegistrationMetadataUtil.createLocalRegistrationMetadata(SignalStore.account.aciIdentityKey, SignalStore.account.pniIdentityKey, registrationData, remoteResult, reglockEnabled)
+    RegistrationRepository.registerQeponAccountLocally(context, metadata)
+
+    if (reglockEnabled) {
+      SignalStore.onboarding.clearAll()
+
+      val stopwatch = Stopwatch("post-reg-storage-service")
+
+      AppDependencies.jobManager.runSynchronously(StorageAccountRestoreJob(), StorageAccountRestoreJob.LIFESPAN)
+      stopwatch.split("account-restore")
+
+      AppDependencies.jobManager
+        .startChain(StorageSyncJob.forRemoteChange())
+        .then(ReclaimUsernameAndLinkJob())
+        .enqueueAndBlockUntilCompletion(TimeUnit.SECONDS.toMillis(10))
+      stopwatch.split("storage-sync")
+
+      stopwatch.stop(TAG)
+    } else if (SignalStore.misc.needsUsernameRestore) {
+      AppDependencies.jobManager.runSynchronously(ReclaimUsernameAndLinkJob(), TimeUnit.SECONDS.toMillis(10))
+    }
+
+    refreshRemoteConfig()
+
+    store.update {
+      it.copy(
+        //registrationCheckpoint = RegistrationCheckpoint.LOCAL_REGISTRATION_COMPLETE
+        registrationCheckpoint = RegistrationCheckpoint.QEPON_ID_VERIFIED
+      )
+    }
+  }
+
+  private suspend fun onSuccessfulQeponRecovery(context: Context, recoveryData: RecoveryData, reglockEnabled: Boolean) {
+    Log.v(TAG, "onSuccessfulQeponRecovery()")
+    //val metadata = QeponLocalRegistrationMetadataUtil.createLocalRegistrationMetadata(SignalStore.account.aciIdentityKey, SignalStore.account.pniIdentityKey, registrationData, remoteResult, reglockEnabled)
+    RegistrationRepository.recoverQeponAccountLocally(context, recoveryData,false)
+
+    if (reglockEnabled) {
+      SignalStore.onboarding.clearAll()
+
+      val stopwatch = Stopwatch("post-reg-storage-service")
+
+      AppDependencies.jobManager.runSynchronously(StorageAccountRestoreJob(), StorageAccountRestoreJob.LIFESPAN)
+      stopwatch.split("account-restore")
+
+      AppDependencies.jobManager
+        .startChain(StorageSyncJob.forRemoteChange())
+        .then(ReclaimUsernameAndLinkJob())
+        .enqueueAndBlockUntilCompletion(TimeUnit.SECONDS.toMillis(10))
+      stopwatch.split("storage-sync")
+
+      stopwatch.stop(TAG)
+    } else if (SignalStore.misc.needsUsernameRestore) {
+      AppDependencies.jobManager.runSynchronously(ReclaimUsernameAndLinkJob(), TimeUnit.SECONDS.toMillis(10))
+    }
+
+    refreshRemoteConfig()
+
+    store.update {
+      it.copy(
+        //registrationCheckpoint = RegistrationCheckpoint.LOCAL_REGISTRATION_COMPLETE
+        registrationCheckpoint = RegistrationCheckpoint.QEPON_ID_VERIFIED
+      )
+    }
+  }
+
   fun hasPin(): Boolean {
     return RegistrationRepository.hasPin() || store.value.isReRegister
   }
@@ -932,6 +1189,10 @@ class RegistrationViewModel : ViewModel() {
     return RegistrationData(code, e164, password, RegistrationRepository.getRegistrationId(), RegistrationRepository.getProfileKey(e164), currentState.fcmToken, RegistrationRepository.getPniRegistrationId(), recoveryPassword)
   }
 
+  private suspend fun getCurrentFCMToken(): String? {
+    val currentState = store.value
+    return currentState.fcmToken
+  }
   /**
    * Used for early returns in order to end the in-progress visual state, as well as print a log message explaining what happened.
    *

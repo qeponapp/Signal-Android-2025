@@ -7,11 +7,11 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">chat.neogen.qepon.com</domain>
-        <domain includeSubdomains="true">storage-service.qepon-gv2-prod.qepon.com</domain>
-        <domain includeSubdomains="true">cdn-aws.qepon-gv2-prod.qepon.com</domain>
-        <domain includeSubdomains="true">cdn-gcp.qepon-gv2-prod.qepon.com</domain>
+        <domain includeSubdomains="true">storage.neogen.qepon.com</domain>
+        <domain includeSubdomains="true">cdn.neogen.qepon.com</domain>
+        <domain includeSubdomains="true">cdn2.neogen.qepon.com</domain>
         <domain includeSubdomains="true">cds.qepon-gv2-prod.qepon.com</domain>
-        <domain includeSubdomains="true">sfu.qepon-gv2-prod.qepon.com</domain>
+        <domain includeSubdomains="true">sfu.voip.neogen.qepon.com</domain>
         <trust-anchors>
             <certificates src="@raw/qepon_ca"/>
             <certificates src="system"/>

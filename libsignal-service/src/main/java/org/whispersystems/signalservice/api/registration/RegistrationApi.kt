@@ -12,6 +12,7 @@ import org.whispersystems.signalservice.api.provisioning.RestoreMethod
 import org.whispersystems.signalservice.internal.push.BackupV2AuthCheckResponse
 import org.whispersystems.signalservice.internal.push.BackupV3AuthCheckResponse
 import org.whispersystems.signalservice.internal.push.PushServiceSocket
+import org.whispersystems.signalservice.internal.push.QeponVerifyAccountResponse
 import org.whispersystems.signalservice.internal.push.RegistrationSessionMetadataResponse
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.util.Locale
@@ -100,6 +101,17 @@ class RegistrationApi(
   fun registerAccount(sessionId: String?, recoveryPassword: String?, attributes: AccountAttributes?, aciPreKeys: PreKeyCollection?, pniPreKeys: PreKeyCollection?, fcmToken: String?, skipDeviceTransfer: Boolean): NetworkResult<VerifyAccountResponse> {
     return NetworkResult.fromFetch {
       pushServiceSocket.submitRegistrationRequest(sessionId, recoveryPassword, attributes, aciPreKeys, pniPreKeys, fcmToken, skipDeviceTransfer)
+    }
+  }
+
+  /**
+   * Submit the cryptographic assets required for an account to use the service.
+   *
+   * `POST /v1/registration/qepon`
+   */
+  fun registerAccountQepon(usernameHashes: List<String>?, attributes: AccountAttributes?, aciPreKeys: PreKeyCollection?, pniPreKeys: PreKeyCollection?, fcmToken: String?): NetworkResult<QeponVerifyAccountResponse> {
+    return NetworkResult.fromFetch {
+      pushServiceSocket.submitRegistrationRequestQepon(  usernameHashes, attributes, aciPreKeys, pniPreKeys, fcmToken)
     }
   }
 

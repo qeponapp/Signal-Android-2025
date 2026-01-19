@@ -164,6 +164,7 @@ class SignalServiceNetworkAccess(context: Context) {
   }
 
   private val serviceTrustStore: TrustStore = SignalServiceTrustStore(context)
+  //val qeponStorageTrustStore: TrustStore = QeponStorageServiceTrustStore(context)
   private val gTrustStore: TrustStore = DomainFrontingTrustStore(context)
   private val fTrustStore: TrustStore = DomainFrontingDigicertTrustStore(context)
 
@@ -292,7 +293,8 @@ class SignalServiceNetworkAccess(context: Context) {
       return uncensoredConfiguration
     }
 
-    val countryCode: Int = PhoneNumberUtil.getInstance().parse(e164, null).countryCode
+    //val countryCode: Int = PhoneNumberUtil.getInstance().parse(e164, null).countryCode
+    val countryCode = 0
 
     return when (SignalStore.settings.censorshipCircumventionEnabled) {
       SettingsValues.CensorshipCircumventionEnabled.ENABLED -> {

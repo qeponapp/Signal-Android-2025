@@ -27,7 +27,10 @@ data class ExtendedColors(
   val colorTransparentInverse4: Color,
   val colorTransparentInverse5: Color,
   val colorNeutralInverse: Color,
-  val colorNeutralVariantInverse: Color
+  val colorNeutralVariantInverse: Color,
+
+  //QEPON
+  val colorToolbar: Color
 )
 
 val LocalExtendedColors = staticCompositionLocalOf {
@@ -53,6 +56,7 @@ val LocalExtendedColors = staticCompositionLocalOf {
     colorTransparentInverse4 = Color.Unspecified,
     colorTransparentInverse5 = Color.Unspecified,
     colorNeutralInverse = Color.Unspecified,
-    colorNeutralVariantInverse = Color.Unspecified
+    colorNeutralVariantInverse = Color.Unspecified,
+    colorToolbar = Color.Unspecified
   )
 }

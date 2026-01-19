@@ -319,6 +319,11 @@ public class WebRtcCallView extends InsetAwareConstraintLayout {
     ViewUtil.setBottomMargin(smallLocalAudioIndicator, audioIndicatorMargin);
 
     startCall.setOnClickListener(v -> {
+      /*val userId = AccountManagerFactory.getInstance()
+                                        .getAccount(context)
+                   ?.userId  // atau deviceId, registrationId, dsb*/
+      //Log.e("DEBUG ID, ")
+
       Runnable onGranted = () -> {
         if (controlsListener != null) {
           startCall.setEnabled(false);

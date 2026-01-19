@@ -464,45 +464,47 @@ android {
 
       // (opsional) BuildConfig khusus endpointmu
       buildConfigField("String", "SIGNAL_URL", "\"https://chat.neogen.qepon.com\"")
-      buildConfigField("String", "STORAGE_URL", "\"https://storage-service.qepon-gv2-prod.qepon.com\"")
-      buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn-aws.qepon-gv2-prod.qepon.com\"")
-      buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn-gcp.qepon-gv2-prod.qepon.com\"")
+      buildConfigField("String", "STORAGE_URL", "\"https://storage.neogen.qepon.com\"")
+      buildConfigField("String", "SIGNAL_CDN_URL", "\"https://cdn.neogen.qepon.com\"")
+      buildConfigField("String", "SIGNAL_CDN2_URL", "\"https://cdn2.neogen.qepon.com\"")
       //buildConfigField("String", "SIGNAL_CDN3_URL", "\"https://cdn3.signal.org\"")
 
-      buildConfigField("String", "SIGNAL_CDSI_URL", "\"https://cds.qepon-gv2-prod.qepon.com\"") //SIGNAL_CONTACT_DISCOVERY_URL
-      buildConfigField("String", "SIGNAL_SERVICE_STATUS_URL", "\"uptime.signal.org\"")
+      buildConfigField("String", "SIGNAL_CDSI_URL", "\"https://cdsi.neogen.qepon.com\"") //SIGNAL_CONTACT_DISCOVERY_URL
+      //buildConfigField("String", "SIGNAL_SERVICE_STATUS_URL", "\"uptime.signal.org\"")
 
       //buildConfigField("String", "SIGNAL_SVR2_URL", "\"https://svr2.signal.org\"")
 
-      buildConfigField("String", "SIGNAL_SFU_URL", "\"https://sfu.qepon-gv2-prod.qepon.com\"")
+      buildConfigField("String", "SIGNAL_SFU_URL", "\"https://sfu.voip.neogen.qepon.com\"")
 
       //buildConfigField("String", "SIGNAL_STAGING_SFU_URL", "\"https://sfu.staging.voip.signal.org\"")
       //buildConfigField("String[]", "SIGNAL_SFU_INTERNAL_NAMES", "new String[]{\"Test\", \"Staging\", \"Development\"}")
-      //buildConfigField("String[]", "SIGNAL_SFU_INTERNAL_URLS", "new String[]{\"https://sfu.test.voip.signal.org\", \"https://sfu.staging.voip.signal.org\", \"https://sfu.staging.test.voip.signal.org\"}")
+      buildConfigField("String[]", "SIGNAL_SFU_INTERNAL_URLS", "new String[]{\"https://sfu.voip.neogen.qepon.com\", \"https://sfu.voip.neogen.qepon.com\", \"https://sfu.voip.neogen.qepon.com\"}")
 
-      buildConfigField("String", "CONTENT_PROXY_HOST", "\"contentproxy.signal.org\"")
-      buildConfigField("int", "CONTENT_PROXY_PORT", "443")
+      //buildConfigField("String", "CONTENT_PROXY_HOST", "\"contentproxy.signal.org\"")
+      //buildConfigField("int", "CONTENT_PROXY_PORT", "443")
 
-      //buildConfigField("String[]", "SIGNAL_SERVICE_IPS", rootProject.extra["service_ips"] as String)
-      //buildConfigField("String[]", "SIGNAL_STORAGE_IPS", rootProject.extra["storage_ips"] as String)
-      //buildConfigField("String[]", "SIGNAL_CDN_IPS", rootProject.extra["cdn_ips"] as String)
-      //buildConfigField("String[]", "SIGNAL_CDN2_IPS", rootProject.extra["cdn2_ips"] as String)
-      //buildConfigField("String[]", "SIGNAL_CDN3_IPS", rootProject.extra["cdn3_ips"] as String)
-      //buildConfigField("String[]", "SIGNAL_SFU_IPS", rootProject.extra["sfu_ips"] as String)
-      //buildConfigField("String[]", "SIGNAL_CONTENT_PROXY_IPS", rootProject.extra["content_proxy_ips"] as String)
+      buildConfigField("String[]", "SIGNAL_SERVICE_IPS", "new String[]{}")
+      buildConfigField("String[]", "SIGNAL_STORAGE_IPS", "new String[]{}")
+      buildConfigField("String[]", "SIGNAL_CDN_IPS", "new String[]{}")
+      buildConfigField("String[]", "SIGNAL_CDN2_IPS", "new String[]{}")
+      buildConfigField("String[]", "SIGNAL_CDN3_IPS", "new String[]{}")
+      buildConfigField("String[]", "SIGNAL_SFU_IPS", "new String[]{}")
+      buildConfigField("String[]", "SIGNAL_CONTENT_PROXY_IPS", "new String[]{}")
       //buildConfigField("String[]", "SIGNAL_CDSI_IPS", rootProject.extra["cdsi_ips"] as String)
       //buildConfigField("String[]", "SIGNAL_SVR2_IPS", rootProject.extra["svr2_ips"] as String)
 
-      buildConfigField("String", "SIGNAL_AGENT", "\"OWA\"")
+      //buildConfigField("String", "SIGNAL_AGENT", "\"OWA\"")
 
       //buildConfigField("String", "SVR2_MRENCLAVE_LEGACY", "\"9314436a9a144992bb3680770ea5fd7934a7ffd29257844a33763a238903d570\"")
       //buildConfigField("String", "SVR2_MRENCLAVE", "\"093be9ea32405e85ae28dbb48eb668aebeb7dbe29517b9b86ad4bec4dfe0e6a6\"")
 
-      //buildConfigField("String", "UNIDENTIFIED_SENDER_TRUST_ROOT", "\"BXu6QIKVz5MA8gstzfOgRQGqyLqOwNKHL6INkv3IHWMF\"")
-      //buildConfigField("String", "ZKGROUP_SERVER_PUBLIC_PARAMS", "\"AMhf5ywVwITZMsff/eCyudZx9JDmkkkbV6PInzG4p8x3VqVJSFiMvnvlEKWuRob/1eaIetR31IYeAbm0NdOuHH8Qi+Rexi1wLlpzIo1gstHWBfZzy1+qHRV5A4TqPp15YzBPm0WSggW6PbSn+F4lf57VCnHF7p8SvzAA2ZZJPYJURt8X7bbg+H3i+PEjH9DXItNEqs2sNcug37xZQDLm7X36nOoGPs54XsEGzPdEV+itQNGUFEjY6X9Uv+Acuks7NpyGvCoKxGwgKgE5XyJ+nNKlyHHOLb6N1NuHyBrZrgtY/JYJHRooo5CEqYKBqdFnmbTVGEkCvJKxLnjwKWf+fEPoWeQFj5ObDjcKMZf2Jm2Ae69x+ikU5gBXsRmoF94GXTLfN0/vLt98KDPnxwAQL9j5V1jGOY8jQl6MLxEs56cwXN0dqCnImzVH3TZT1cJ8SW1BRX6qIVxEzjsSGx3yxF3suAilPMqGRp4ffyopjMD1JXiKR2RwLKzizUe5e8XyGOy9fplzhw3jVzTRyUZTRSZKkMLWcQ/gv0E4aONNqs4P+NameAZYOD12qRkxosQQP5uux6B2nRyZ7sAV54DgFyLiRcq1FvwKw2EPQdk4HDoePrO/RNUbyNddnM/mMgj4FW65xCoT1LmjrIjsv/Ggdlx46ueczhMgtBunx1/w8k8V+l8LVZ8gAT6wkU5J+DPQalQguMg12Jzug3q4TbdHiGCmD9EunCwOmsLuLJkz6EcSYXtrlDEnAM+hicw7iergYLLlMXpfTdGxJCWJmP4zqUFeTTmsmhsjGBt7NiEB/9pFFEB3pSbf4iiUukw63Eo8Aqnf4iwob6X1QviCWuc8t0LUlT9vALgh/f2DPVOOmR0RW6bgRvc7DSF20V/omg+YBw==\"")
+      buildConfigField("String", "UNIDENTIFIED_SENDER_TRUST_ROOT", "\"BWZcixVgrKt4x9QrHi1b2avIWIAfxdzliIv55EnvTSVE\"")
+      buildConfigField("String", "ZKGROUP_SERVER_PUBLIC_PARAMS", "\"AGiZiPzB2SxsEYROWPE23sLOl6ZMbe4ds65qbj0qN3lQ0sfTQvX4xiJsEu6IJ5ljq2LboORxXy+W4hrYSb4E3X6Y4o8i3eO9pcUYPVFm4/DggnmdNt3aWm4r5/DxxtUzd/BCEHzQETSSH6wVmp9UGmo7xhnwjYUbn5NDEVte53I/XGrjurQyiFSUB7HCAbN7ouHgZp58oS8xR0w6KmXQxlgkNXV1qJz79Mt6J196bVEZWJfdOs0n+fuCbZmEdzryGZaPaB8FiDlQ1xD22RtH4leSvozmRs3mG5hAUTxHlOAyqDAD/ozSYzTne6I8TDVMi5J1zCienc7ujoAy+O3KoiXuyaV3a9jjdEa6DMfvb+m086FvoEtHzikfV06ziXBSIrS6iVH3vcK1OzHbdAC4QDeMjEiTR9qxACIdLEZ5EDVRzqk0gHIZ58l4zygZnxespeiaWErKBD2yFg4k87mJM3mineef5bDGOWFwQTbk+ObnqMZosQIrD0gswuU1w9YKVoYbdGZyuR3hVsylWLnhXmxHX7HG4lt63dWesVoGdt0nYLm46XGWoVGJ1P/bpbsvR+A+zQt2WIBNVWu2xi4c7Wcaob4YjRff1QAJYqwDInQlphsKHOlXzZRqOHuJANInU8h80n5O/BJ5S7N0argFBgvOahnZpQkNATy/Vh6KHvcDiLDQV8REsbuA1we7d9vxNeIcwu6GDL32nb7q3wPUtEgUZTxMFURK+Kn+KLhOwAn1NOlkawJaEc6N4Kx5F894KSqjweoSpyxOng2mHEsB2JyfJeyQ7Riosz9wF8jWuVJZ6gD32WNE2gxqQrlJQUmZzMF6i+yTiPxggDvFlsYkjDJoaCiL4H3syGRlcMSrx90plQ2mrc1uhMByWM3qA9CTQA\"")
+      buildConfigField("String", "GENERIC_SERVER_PUBLIC_PARAMS", "\"AIwXVSogiYYUUnVaTtEwpEy2gFR1MVdLnM2Ue9XUMnhNLCBo3xHYTyXpfdEXkgC/KxrvO3wsMmS/YSNny9oQ2xeKEBpdCY9y3ibIV8mamMy31+86d+ZtxyL4eJN4jN/RHbjZIn7DG+w1v4xwMBsvbRYy0FOfnYknamY0qTg8h/A0LibMs79rriOTEET2w/6kM5qxJleQ/XnN/ze77R0+sUEcWh6I+DxEZMYyggiHHNd5H6mFnII7d1Y3Z1mMnqDLS7ga1I3SGR6cLFHZ4ZNQ93PknqRTJ/rckddx1jtAYUF+\"")
+      buildConfigField("String", "BACKUP_SERVER_PUBLIC_PARAMS", "\"AIpPIvpI3qjC3Byev/OEW/tApsY/vYK1ohnhZg41kKQYPD6fjKtXgqquioCTY+1SlSGpH0Cgc5eEpW3W8BHI924e1Af8Qq+1/KULAoXs1HXB2l8ATfD3p0JQ4Lofec/GXwxRJMhj50MWoIP1tZ1c6U9o9SNeUPxsFRdgP45GzEg+HO6uaCLO+szx58IFtQ6Nt1ISXKRS40NlRgBPifOw2WaqwqRjx6q0OoZshT/XOyYwyTSG4Tco7clOQya0gCtEZIB+wVq3QvW7jNIfkrk+OxVI9gJIGmSfq0jqZczLObY2\"")
 
-      /*buildConfigField("String", "GENERIC_SERVER_PUBLIC_PARAMS", "\"AByD873dTilmOSG0TjKrvpeaKEsUmIO8Vx9BeMmftwUs9v7ikPwM8P3OHyT0+X3EUMZrSe9VUp26Wai51Q9I8mdk0hX/yo7CeFGJyzoOqn8e/i4Ygbn5HoAyXJx5eXfIbqpc0bIxzju4H/HOQeOpt6h742qii5u/cbwOhFZCsMIbElZTaeU+BWMBQiZHIGHT5IE0qCordQKZ5iPZom0HeFa8Yq0ShuEyAl0WINBiY6xE3H/9WnvzXBbMuuk//eRxXgzO8ieCeK8FwQNxbfXqZm6Ro1cMhCOF3u7xoX83QhpN\"")
-      buildConfigField("String", "BACKUP_SERVER_PUBLIC_PARAMS", "\"AJwNSU55fsFCbgaxGRD11wO1juAs8Yr5GF8FPlGzzvdJJIKH5/4CC7ZJSOe3yL2vturVaRU2Cx0n751Vt8wkj1bozK3CBV1UokxV09GWf+hdVImLGjXGYLLhnI1J2TWEe7iWHyb553EEnRb5oxr9n3lUbNAJuRmFM7hrr0Al0F0wrDD4S8lo2mGaXe0MJCOM166F8oYRQqpFeEHfiLnxA1O8ZLh7vMdv4g9jI5phpRBTsJ5IjiJrWeP0zdIGHEssUeprDZ9OUJ14m0v61eYJMKsf59Bn+mAT2a7YfB+Don9O\"")
+      /*
+
       buildConfigField("String[]", "LANGUAGES", "new String[]{ ${languageList().map { "\"$it\"" }.joinToString(separator = ", ")} }")
       buildConfigField("int", "CANONICAL_VERSION_CODE", "$canonicalVersionCode")
       buildConfigField("String", "DEFAULT_CURRENCIES", "\"EUR,AUD,GBP,CAD,CNY\"")

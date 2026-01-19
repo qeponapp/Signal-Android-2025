@@ -1,15 +1,8 @@
-/*
- * Copyright 2024 Signal Messenger, LLC
- * SPDX-License-Identifier: AGPL-3.0-only
- */
-
 package org.thoughtcrime.securesms.registration.ui.welcome
 
-import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
-import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.activityViewModels
@@ -26,30 +19,17 @@ import org.thoughtcrime.securesms.registration.fragments.WelcomePermissions
 import org.thoughtcrime.securesms.registration.ui.RegistrationCheckpoint
 import org.thoughtcrime.securesms.registration.ui.RegistrationViewModel
 import org.thoughtcrime.securesms.registration.ui.grantpermissions.GrantPermissionsFragment
-import org.thoughtcrime.securesms.restore.RestoreActivity
 import org.thoughtcrime.securesms.util.BackupUtil
 import org.thoughtcrime.securesms.util.CommunicationActions
 import org.thoughtcrime.securesms.util.navigation.safeNavigate
 
 /**
- * First screen that is displayed on the very first app launch.
+ * Qepon flavor-specific welcome: routes restore to ImportRecovery flow.
  */
-class WelcomeFragment : LoggingFragment(R.layout.fragment_registration_welcome) {
+class QeponWelcomeFragment : LoggingFragment(R.layout.fragment_registration_welcome) {
   private val sharedViewModel by activityViewModels<RegistrationViewModel>()
   private val binding: FragmentRegistrationWelcomeBinding by ViewBinderDelegate(FragmentRegistrationWelcomeBinding::bind)
-
-  private val launchRestoreActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-    when (val resultCode = result.resultCode) {
-      Activity.RESULT_OK -> {
-        sharedViewModel.onBackupSuccessfullyRestored()
-        findNavController().safeNavigate(R.id.action_go_to_registration)
-      }
-      Activity.RESULT_CANCELED -> {
-        Log.w(TAG, "Backup restoration canceled.")
-      }
-      else -> Log.w(TAG, "Backup restoration activity ended with unknown result code: $resultCode")
-    }
-  }
+  private var pendingAction: NextAction? = null
 
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     super.onViewCreated(view, savedInstanceState)
@@ -62,6 +42,7 @@ class WelcomeFragment : LoggingFragment(R.layout.fragment_registration_welcome) 
 
   private fun onContinueClicked() {
     if (Permissions.isRuntimePermissionsRequired() && !hasAllPermissions()) {
+      pendingAction = NextAction.REGISTER
       findNavController().safeNavigate(
         R.id.action_welcomeFragment_to_grantPermissionsFragment,
         bundleOf("welcomeAction" to GrantPermissionsFragment.WelcomeAction.CONTINUE)
@@ -83,20 +64,42 @@ class WelcomeFragment : LoggingFragment(R.layout.fragment_registration_welcome) 
 
   private fun onTransferOrRestoreClicked() {
     if (Permissions.isRuntimePermissionsRequired() && !hasAllPermissions()) {
+      pendingAction = NextAction.RESTORE
       findNavController().safeNavigate(
         R.id.action_welcomeFragment_to_grantPermissionsFragment,
         bundleOf("welcomeAction" to GrantPermissionsFragment.WelcomeAction.RESTORE_BACKUP)
       )
     } else {
       sharedViewModel.setRegistrationCheckpoint(RegistrationCheckpoint.PERMISSIONS_GRANTED)
+      findNavController().safeNavigate(R.id.action_welcome_to_importRecovery)
+    }
+  }
 
-      val restoreIntent = RestoreActivity.getRestoreIntent(requireActivity())
-      launchRestoreActivity.launch(restoreIntent)
+  override fun onResume() {
+    super.onResume()
+    val action = pendingAction
+    if (action != null && (!Permissions.isRuntimePermissionsRequired() || hasAllPermissions())) {
+      pendingAction = null
+      when (action) {
+        NextAction.REGISTER -> {
+          sharedViewModel.maybePrefillE164(requireContext())
+          findNavController().safeNavigate(R.id.action_skip_restore)
+        }
+        NextAction.RESTORE -> {
+          sharedViewModel.setRegistrationCheckpoint(RegistrationCheckpoint.PERMISSIONS_GRANTED)
+          findNavController().safeNavigate(R.id.action_welcome_to_importRecovery)
+        }
+      }
     }
   }
 
   companion object {
-    private val TAG = Log.tag(WelcomeFragment::class.java)
+    private val TAG = Log.tag(QeponWelcomeFragment::class.java)
     private const val TERMS_AND_CONDITIONS_URL = "https://signal.org/legal"
+  }
+
+  private enum class NextAction {
+    REGISTER,
+    RESTORE
   }
 }

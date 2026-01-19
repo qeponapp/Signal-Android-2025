@@ -58,6 +58,7 @@ import org.whispersystems.signalservice.api.groupsv2.GroupChangeReconstruct;
 import org.whispersystems.signalservice.api.groupsv2.GroupChangeUtil;
 import org.whispersystems.signalservice.api.groupsv2.GroupLinkNotActiveException;
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Api;
+import org.whispersystems.signalservice.api.groupsv2.GroupsV2AuthorizationString;
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Operations;
 import org.whispersystems.signalservice.api.groupsv2.InvalidGroupStateException;
 import org.whispersystems.signalservice.api.groupsv2.NotAbleToApplyGroupV2ChangeException;
@@ -158,9 +159,17 @@ final class GroupManagerV2 {
                                                    .requireV2GroupProperties()
                                                    .getGroupMasterKey();
 
+
     GroupSecretParams groupSecretParams = GroupSecretParams.deriveFromMasterKey(groupMasterKey);
 
-    return groupsV2Api.getGroupExternalCredential(authorization.getAuthorizationForToday(serviceIds, groupSecretParams));
+    Log.e("GROUP_CREDENTIAL", "groupId: " + groupId.getDecodedId());
+    Log.e("GROUP_CREDENTIAL", "groupMasterKey: " + groupMasterKey.hashCode());
+    Log.e("GROUP_CREDENTIAL", "groupSecret: " + groupSecretParams.getMasterKey().hashCode());
+
+    GroupsV2AuthorizationString header = authorization.getAuthorizationForToday(serviceIds, groupSecretParams);
+    Log.d("GROUP_CREDENTIAL", "AuthorizationHeader: " + header.toString());
+
+    return groupsV2Api.getGroupExternalCredential(header);
   }
 
   @WorkerThread
@@ -222,9 +231,15 @@ final class GroupManagerV2 {
                                                         int disappearingMessagesTimer)
         throws GroupChangeFailedException, IOException, MembershipNotSuitableForV2Exception
     {
-      GroupSecretParams groupSecretParams = GroupSecretParams.generate();
-      DecryptedGroupResponse createGroupResponse;
+      // ✅ LOG 1: Saat mulai buat grup
+      Log.d("GROUP_CREATE", "Creating group: name=" + name + ", members=" + members.size());
 
+      GroupSecretParams groupSecretParams = GroupSecretParams.generate();
+
+      // ✅ LOG 2: Group secret key
+      Log.d("GROUP_CREATE", "GroupSecret: " + groupSecretParams.getMasterKey());
+
+      DecryptedGroupResponse createGroupResponse;
       try {
         createGroupResponse = createGroupOnServer(groupSecretParams, name, avatar, members, disappearingMessagesTimer);
       } catch (GroupAlreadyExistsException e) {
@@ -232,9 +247,18 @@ final class GroupManagerV2 {
       }
 
       DecryptedGroup                decryptedGroup        = createGroupResponse.getGroup();
+      // ✅ LOG 3: Server response dan jumlah member
+      Log.d("GROUP_CREATE", "Server response: " + decryptedGroup + " | members=" + decryptedGroup.members.size());
+
       GroupMasterKey                masterKey             = groupSecretParams.getMasterKey();
       ReceivedGroupSendEndorsements groupSendEndorsements = groupsV2Operations.forGroup(groupSecretParams).receiveGroupSendEndorsements(selfAci, decryptedGroup, createGroupResponse.getGroupSendEndorsementsResponse());
+      // ✅ LOG 4: Endorsement result
+      Log.d("GROUP_CREATE", "Endorsements received: " + groupSendEndorsements.toString());
+
       GroupId.V2                    groupId               = groupDatabase.create(masterKey, decryptedGroup, groupSendEndorsements);
+      // ✅ LOG 5: ID grup setelah disimpan di database
+      Log.d("GROUP_CREATE", "Group DB ID: " + groupId);
+
 
       if (groupId == null) {
         throw new GroupChangeFailedException("Unable to create group, group already exists");
@@ -242,6 +266,8 @@ final class GroupManagerV2 {
 
       RecipientId              groupRecipientId = SignalDatabase.recipients().getOrInsertFromGroupId(groupId);
       Recipient                groupRecipient   = Recipient.resolved(groupRecipientId);
+      // ✅ LOG 6: Recipient ID yang dibuat
+      Log.d("GROUP_CREATE", "Recipient created: " + groupRecipient.getId());
 
       AvatarHelper.setAvatar(context, groupRecipientId, avatar != null ? new ByteArrayInputStream(avatar) : null);
       groupDatabase.onAvatarUpdated(groupId, avatar != null);
@@ -253,6 +279,9 @@ final class GroupManagerV2 {
                                                                .build();
 
       RecipientAndThread recipientAndThread = sendGroupUpdateHelper.sendGroupUpdate(masterKey, new GroupMutation(null, groupChange, decryptedGroup), null);
+
+      // ✅ LOG 7: Thread tujuan group update
+      Log.d("GROUP_CREATE", "Sending group update to thread: " + recipientAndThread.threadId);
 
       return new GroupManager.GroupActionResult(recipientAndThread.groupRecipient,
                                                 recipientAndThread.threadId,

@@ -464,9 +464,19 @@ public final class SignalCallManager implements CallManager.Observer, GroupCall.
         GroupId.V2              groupId    = group.requireGroupId().requireV2();
         GroupExternalCredential credential = GroupManager.getGroupExternalCredential(context, groupId);
 
+        Log.e("PEEK_GROUP_CALL", "GroupId: " + groupId.toString());
+        Log.e("PEEK_GROUP_CALL", "Credential Token: " + credential.token);
+
         List<GroupCall.GroupMemberInfo> members = Stream.of(GroupManager.getUuidCipherTexts(context, groupId))
                                                         .map(entry -> new GroupCall.GroupMemberInfo(entry.getKey(), entry.getValue().serialize()))
                                                         .toList();
+        Log.d("PEEK_GROUP_CALL", "UUID members count: " + members.size());
+        for (GroupCall.GroupMemberInfo m : members) {
+          Log.d("PEEK_GROUP_CALL", "UUID Member: " + m.toString());
+        }
+
+        Log.e("PEEK_GROUP_CALL", "SFU URL: "+SignalStore.internal().getGroupCallingServer());
+
         callManager.peekGroupCall(SignalStore.internal().getGroupCallingServer(), credential.token.getBytes(Charsets.UTF_8), members, peekInfo -> {
           Long threadId = SignalDatabase.threads().getThreadIdFor(group.getId());
 
@@ -875,6 +885,9 @@ public final class SignalCallManager implements CallManager.Observer, GroupCall.
         headerPairs = Stream.of(headers)
                             .map(header -> new Pair<>(header.getName(), header.getValue()))
                             .toList();
+
+        Log.d(TAG, "onSendHttpRequest(): headers: " + headerPairs);
+
       } else {
         headerPairs = Collections.emptyList();
       }

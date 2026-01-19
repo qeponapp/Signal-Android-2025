@@ -86,6 +86,9 @@ tasks.whenTaskAdded {
   }
 }
 
+tasks.named<Jar>("sourcesJar") {
+  duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
 dependencies {
   api(libs.google.libphonenumber)
   api(libs.jackson.core)
@@ -95,6 +98,7 @@ dependencies {
   api(libs.square.okhttp3)
   api(libs.square.okio)
   implementation(libs.google.jsr305)
+  implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
   api(libs.rxjava3.rxjava)
   implementation(libs.rxjava3.rxkotlin)

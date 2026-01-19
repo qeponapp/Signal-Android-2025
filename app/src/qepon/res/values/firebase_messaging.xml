@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="google_app_id" translatable="false">1:1092882181378:android:139947f3bf67a8d0c7e61b</string>
+    <string name="gcm_defaultSenderId" translatable="false">1092882181378</string>
+    <string name="default_web_client_id" translatable="false">1092882181378-i2hkjql51plb7cj4njpisk5i85j909tr.apps.googleusercontent.com</string>
+    <string name="firebase_database_url" translatable="false">https://qepon-1512.firebaseio.com</string>
+    <string name="google_api_key" translatable="false">AIzaSyD1o3tpmHFy9ngf7p1ilb7Frwic3gTmG3k</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD1o3tpmHFy9ngf7p1ilb7Frwic3gTmG3k</string>
+    <string name="project_id" translatable="false">qepon-1512</string>
+</resources>

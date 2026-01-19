@@ -10,10 +10,12 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationManagerCompat
 import com.google.android.gms.auth.api.phone.SmsRetriever
+import com.google.i18n.phonenumbers.PhoneNumberUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okio.ByteString.Companion.toByteString
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.signal.core.util.Base64
@@ -49,12 +51,14 @@ import org.thoughtcrime.securesms.registration.data.LocalRegistrationMetadataUti
 import org.thoughtcrime.securesms.registration.data.LocalRegistrationMetadataUtil.getPniIdentityKeyPair
 import org.thoughtcrime.securesms.registration.data.LocalRegistrationMetadataUtil.getPniPreKeyCollection
 import org.thoughtcrime.securesms.registration.data.network.BackupAuthCheckResult
+import org.thoughtcrime.securesms.registration.data.network.QeponRegisterAccountResult
 import org.thoughtcrime.securesms.registration.data.network.RegisterAccountResult
 import org.thoughtcrime.securesms.registration.data.network.RegistrationSessionCheckResult
 import org.thoughtcrime.securesms.registration.data.network.RegistrationSessionCreationResult
 import org.thoughtcrime.securesms.registration.data.network.RegistrationSessionResult
 import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequestResult
 import org.thoughtcrime.securesms.registration.fcm.PushChallengeRequest
+import org.thoughtcrime.securesms.registration.ui.toE164
 import org.thoughtcrime.securesms.registration.viewmodel.SvrAuthCredentialSet
 import org.thoughtcrime.securesms.service.DirectoryRefreshListener
 import org.thoughtcrime.securesms.service.RotateSignedPreKeyListener
@@ -74,10 +78,12 @@ import org.whispersystems.signalservice.api.registration.RegistrationApi
 import org.whispersystems.signalservice.api.svr.Svr3Credentials
 import org.whispersystems.signalservice.internal.push.AuthCredentials
 import org.whispersystems.signalservice.internal.push.PushServiceSocket
+import org.whispersystems.signalservice.internal.push.QeponVerifyAccountResponse
 import org.whispersystems.signalservice.internal.push.RegistrationSessionMetadataResponse
 import org.whispersystems.signalservice.internal.push.VerifyAccountResponse
 import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.security.SecureRandom
 import java.util.Locale
 import java.util.Optional
 import java.util.concurrent.CountDownLatch
@@ -220,6 +226,139 @@ object RegistrationRepository {
 
       val masterKey = if (data.masterKey != null) MasterKey(data.masterKey.toByteArray()) else null
       SvrRepository.onRegistrationComplete(masterKey, data.pin, hasPin, data.reglockEnabled)
+
+      AppDependencies.resetNetwork()
+      AppDependencies.startNetwork()
+      PreKeysSyncJob.enqueue()
+
+      val jobManager = AppDependencies.jobManager
+      jobManager.add(DirectoryRefreshJob(false))
+      jobManager.add(RotateCertificateJob())
+
+      DirectoryRefreshListener.schedule(context)
+      RotateSignedPreKeyListener.schedule(context)
+    }
+
+  @JvmStatic
+  suspend fun registerQeponAccountLocally(context: Context, data: LocalRegistrationMetadata) =
+    withContext(Dispatchers.IO) {
+      Log.v(TAG, "registerAccountLocally()")
+      //val aciIdentityKeyPair = data.getAciIdentityKeyPair()
+      //val pniIdentityKeyPair = data.getPniIdentityKeyPair()
+      //SignalStore.account.restoreAciIdentityKeyFromBackup(aciIdentityKeyPair.publicKey.serialize(), aciIdentityKeyPair.privateKey.serialize())
+      //SignalStore.account.restorePniIdentityKeyFromBackup(pniIdentityKeyPair.publicKey.serialize(), pniIdentityKeyPair.privateKey.serialize())
+
+      //val aciPreKeyCollection = data.getAciPreKeyCollection()
+      //val pniPreKeyCollection = data.getPniPreKeyCollection()
+      val aci: ACI = ACI.parseOrThrow(data.aci)
+      val pni: PNI = PNI.parseOrThrow(data.pni)
+      val hasPin: Boolean = data.hasPin
+
+      SignalStore.account.setAci(aci)
+      SignalStore.account.setPni(pni)
+
+      AppDependencies.resetProtocolStores()
+
+      AppDependencies.protocolStore.aci().sessions().archiveAllSessions()
+      AppDependencies.protocolStore.pni().sessions().archiveAllSessions()
+      SenderKeyUtil.clearAllState()
+
+      //val aciProtocolStore = AppDependencies.protocolStore.aci()
+      //val aciMetadataStore = SignalStore.account.aciPreKeys
+
+      //val pniProtocolStore = AppDependencies.protocolStore.pni()
+      //val pniMetadataStore = SignalStore.account.pniPreKeys
+
+      //storeSignedAndLastResortPreKeys(aciProtocolStore, aciMetadataStore, aciPreKeyCollection)
+      //storeSignedAndLastResortPreKeys(pniProtocolStore, pniMetadataStore, pniPreKeyCollection)
+
+      val recipientTable = SignalDatabase.recipients
+      val selfId = Recipient.trustedPush(aci, pni, data.e164).id
+
+      recipientTable.setProfileSharing(selfId, true)
+      recipientTable.markRegisteredOrThrow(selfId, aci)
+      recipientTable.linkIdsForSelf(aci, pni, data.e164)
+      recipientTable.setProfileKey(selfId, ProfileKey(data.profileKey.toByteArray()))
+
+      AppDependencies.recipientCache.clearSelf()
+
+      SignalStore.account.setE164(data.e164)
+      Log.e("NOMOR", data.e164)
+      SignalStore.account.fcmToken = data.fcmToken
+      SignalStore.account.fcmEnabled = data.fcmEnabled
+
+
+      //val now = System.currentTimeMillis()
+      //saveOwnIdentityKey(selfId, aci, aciProtocolStore, now)
+      //saveOwnIdentityKey(selfId, pni, pniProtocolStore, now)
+
+      SignalStore.account.setServicePassword(data.servicePassword)
+      SignalStore.account.setRegistered(true)
+      TextSecurePreferences.setPromptedPushRegistration(context, true)
+      TextSecurePreferences.setUnauthorizedReceived(context, false)
+      NotificationManagerCompat.from(context).cancel(NotificationIds.UNREGISTERED_NOTIFICATION_ID)
+
+      //val masterKey = if (data.masterKey != null) MasterKey(data.masterKey.toByteArray()) else null
+      //SvrRepository.onRegistrationComplete(masterKey, data.pin, hasPin, data.reglockEnabled)
+
+      AppDependencies.resetNetwork()
+      AppDependencies.startNetwork()
+      PreKeysSyncJob.enqueue()
+
+      val jobManager = AppDependencies.jobManager
+      jobManager.add(DirectoryRefreshJob(false))
+      jobManager.add(RotateCertificateJob())
+
+      DirectoryRefreshListener.schedule(context)
+      RotateSignedPreKeyListener.schedule(context)
+    }
+
+  @JvmStatic
+  suspend fun recoverQeponAccountLocally(context: Context, recoveryData: RecoveryData, hasPin: Boolean) =
+    withContext(Dispatchers.IO) {
+      Log.v(TAG, "restoreAccountLocally()")
+
+      val aci: ACI = ACI.parseOrThrow(recoveryData.aci)
+      val pni: PNI = PNI.parseOrThrow(recoveryData.pni)
+      val hasPin: Boolean = hasPin
+
+      SignalStore.account.setAci(aci)
+      SignalStore.account.setPni(pni)
+
+      AppDependencies.resetProtocolStores()
+
+      AppDependencies.protocolStore.aci().sessions().archiveAllSessions()
+      AppDependencies.protocolStore.pni().sessions().archiveAllSessions()
+      SenderKeyUtil.clearAllState()
+
+      val recipientTable = SignalDatabase.recipients
+      val selfId = Recipient.trustedPush(aci, pni, recoveryData.e164).id
+
+      recipientTable.setProfileSharing(selfId, true)
+      recipientTable.markRegisteredOrThrow(selfId, aci)
+      recipientTable.linkIdsForSelf(aci, pni, recoveryData.e164)
+      recipientTable.setProfileKey(selfId, ProfileKey(recoveryData.profileKey))
+
+      AppDependencies.recipientCache.clearSelf()
+
+      SignalStore.account.setE164(recoveryData.e164)
+      Log.e("NOMOR", recoveryData.e164)
+      SignalStore.account.fcmToken = recoveryData.fcmToken
+      SignalStore.account.fcmEnabled = true
+
+
+      //val now = System.currentTimeMillis()
+      //saveOwnIdentityKey(selfId, aci, aciProtocolStore, now)
+      //saveOwnIdentityKey(selfId, pni, pniProtocolStore, now)
+
+      SignalStore.account.setServicePassword(recoveryData.password) //service password
+      SignalStore.account.setRegistered(true)
+      TextSecurePreferences.setPromptedPushRegistration(context, true)
+      TextSecurePreferences.setUnauthorizedReceived(context, false)
+      NotificationManagerCompat.from(context).cancel(NotificationIds.UNREGISTERED_NOTIFICATION_ID)
+
+      //val masterKey = if (data.masterKey != null) MasterKey(data.masterKey.toByteArray()) else null
+      //SvrRepository.onRegistrationComplete(masterKey, data.pin, hasPin, data.reglockEnabled)
 
       AppDependencies.resetNetwork()
       AppDependencies.startNetwork()
@@ -393,6 +532,7 @@ object RegistrationRepository {
   suspend fun registerAccount(context: Context, sessionId: String?, registrationData: RegistrationData, recoveryPassword: String?, pin: String? = null, masterKeyProducer: MasterKeyProducer? = null): RegisterAccountResult =
     withContext(Dispatchers.IO) {
       Log.v(TAG, "registerAccount()")
+      Log.v(TAG, "V1")
       val api: RegistrationApi = AccountManagerFactory.getInstance().createUnauthenticated(context, registrationData.e164, SignalServiceAddress.DEFAULT_DEVICE_ID, registrationData.password).registrationApi
 
       val universalUnidentifiedAccess: Boolean = TextSecurePreferences.isUniversalUnidentifiedAccess(context)
@@ -451,6 +591,60 @@ object RegistrationRepository {
       return@withContext RegisterAccountResult.from(result)
     }
 
+  /**
+   * Submit the necessary assets as a verified account so that the user can actually use the service.
+   */
+  suspend fun registerAccountQepon(context: Context, usernameHashes: List<String>?, registrationData: RegistrationData): QeponRegisterAccountResult =
+    withContext(Dispatchers.IO) {
+      Log.v(TAG, "registerAccount()")
+      Log.v(TAG, "QEPON")
+
+      val api: RegistrationApi = AccountManagerFactory
+        .getInstance()
+        .createUnauthenticated(context, registrationData.e164, SignalServiceAddress.DEFAULT_DEVICE_ID, registrationData.password)
+        .registrationApi
+
+      val universalUnidentifiedAccess: Boolean = TextSecurePreferences.isUniversalUnidentifiedAccess(context)
+      val unidentifiedAccessKey: ByteArray = UnidentifiedAccess.deriveAccessKeyFrom(registrationData.profileKey)
+
+      val accountAttributes = AccountAttributes(
+        signalingKey = null,
+        registrationId = registrationData.registrationId,
+        fetchesMessages = registrationData.isNotFcm,
+        registrationLock = null,
+        unidentifiedAccessKey = unidentifiedAccessKey,
+        unrestrictedUnidentifiedAccess = universalUnidentifiedAccess,
+        capabilities = AppCapabilities.getCapabilities(true),
+        discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy.phoneNumberDiscoverabilityMode == PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode.DISCOVERABLE,
+        name = null,
+        pniRegistrationId = registrationData.pniRegistrationId,
+        recoveryPassword = null
+
+      )
+
+      SignalStore.account.generateAciIdentityKeyIfNecessary()
+      val aciIdentity: IdentityKeyPair = SignalStore.account.aciIdentityKey
+
+      SignalStore.account.generatePniIdentityKeyIfNecessary()
+      val pniIdentity: IdentityKeyPair = SignalStore.account.pniIdentityKey
+
+      val aciPreKeyCollection = generateSignedAndLastResortPreKeys(aciIdentity, SignalStore.account.aciPreKeys)
+      val pniPreKeyCollection = generateSignedAndLastResortPreKeys(pniIdentity, SignalStore.account.pniPreKeys)
+
+      val result: NetworkResult<QeponAccountRegistrationResult> = api.registerAccountQepon( usernameHashes, accountAttributes, aciPreKeyCollection, pniPreKeyCollection, registrationData.fcmToken)
+        .map { accountRegistrationResponse: QeponVerifyAccountResponse ->
+          QeponAccountRegistrationResult(
+            uuid = accountRegistrationResponse.uuid,
+            number = accountRegistrationResponse.number,
+            pni = accountRegistrationResponse.pni,
+            usernameHash = accountRegistrationResponse.usernameHash,
+            usernameLinkHandle = accountRegistrationResponse.usernameLinkHandle,
+            storageCapable = accountRegistrationResponse.storageCapable
+          )
+        }
+
+      return@withContext QeponRegisterAccountResult.from(result)
+    }
   private suspend fun createSessionAndBlockForPushChallenge(accountManager: RegistrationApi, fcmToken: String, mcc: String?, mnc: String?): NetworkResult<RegistrationSessionMetadataResponse> =
     withContext(Dispatchers.IO) {
       // TODO [regv2]: do not use event bus nor latch

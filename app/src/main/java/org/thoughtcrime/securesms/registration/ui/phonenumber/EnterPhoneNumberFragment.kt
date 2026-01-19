@@ -392,7 +392,10 @@ class EnterPhoneNumberFragment : LoggingFragment(R.layout.fragment_registration_
     }
     when (result) {
       is VerificationCodeRequestResult.Success -> throw IllegalStateException("Session error handler called on successful response!")
-      is VerificationCodeRequestResult.ChallengeRequired -> handleChallenges(result.challenges)
+      is VerificationCodeRequestResult.ChallengeRequired -> {
+        //handleChallenges(result.challenges)
+        Log.e(TAG, "Challenge Required!")
+      }
       is VerificationCodeRequestResult.ExternalServiceFailure -> presentRemoteErrorDialog(getString(R.string.RegistrationActivity_sms_provider_error))
       is VerificationCodeRequestResult.ImpossibleNumber -> {
         MaterialAlertDialogBuilder(requireContext()).apply {

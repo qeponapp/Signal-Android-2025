@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/welcomeFragment"
-        android:name="org.thoughtcrime.securesms.registration.ui.welcome.WelcomeFragment"
+        android:name="org.thoughtcrime.securesms.registration.ui.welcome.QeponWelcomeFragment"
         android:label="fragment_welcome"
         tools:layout="@layout/fragment_registration_welcome">
 
@@ -280,7 +280,15 @@
         android:id="@+id/importRecoveryFragment"
         android:name="org.thoughtcrime.securesms.registration.ui.recovery.ImportRecoveryFragment"
         android:label="fragment_import_recovery"
-        tools:layout="@layout/fragment_import_recovery" />
+        tools:layout="@layout/fragment_import_recovery" >
+        <action
+            android:id="@+id/action_importRecoveryFragment_to_displayQeponIdFragment"
+            app:destination="@id/displayQeponIdFragment"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
+            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+    </fragment>
 
     <action
         android:id="@+id/action_restart_to_welcomeFragment"

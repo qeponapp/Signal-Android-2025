@@ -50,7 +50,7 @@ class GrantPermissionsFragment : ComposeFragment() {
     when (val resultCode = result.resultCode) {
       Activity.RESULT_OK -> {
         sharedViewModel.onBackupSuccessfullyRestored()
-        NavHostFragment.findNavController(this).safeNavigate(GrantPermissionsFragmentDirections.actionEnterPhoneNumber())
+        NavHostFragment.findNavController(this).safeNavigate(GrantPermissionsFragmentDirections.actionSignUp())
       }
       Activity.RESULT_CANCELED -> Log.w(TAG, "Backup restoration canceled.")
       else -> Log.w(TAG, "Backup restoration activity ended with unknown result code: $resultCode")
@@ -102,7 +102,7 @@ class GrantPermissionsFragment : ComposeFragment() {
 
   private fun proceedToNextScreen() {
     when (welcomeAction) {
-      WelcomeAction.CONTINUE -> findNavController().safeNavigate(GrantPermissionsFragmentDirections.actionEnterPhoneNumber())
+      WelcomeAction.CONTINUE -> findNavController().safeNavigate(GrantPermissionsFragmentDirections.actionSignUp())
       WelcomeAction.RESTORE_BACKUP -> {
         val restoreIntent = RestoreActivity.getRestoreIntent(requireActivity())
         launchRestoreActivity.launch(restoreIntent)

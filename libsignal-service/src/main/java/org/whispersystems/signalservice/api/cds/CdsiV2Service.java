@@ -8,6 +8,7 @@ package org.whispersystems.signalservice.api.cds;
 import org.signal.libsignal.net.CdsiLookupRequest;
 import org.signal.libsignal.net.CdsiLookupResponse;
 import org.signal.libsignal.net.Network;
+import org.signal.libsignal.protocol.logging.Log;
 import org.signal.libsignal.zkgroup.profiles.ProfileKey;
 import org.whispersystems.signalservice.api.NetworkResult;
 import org.whispersystems.signalservice.api.push.ServiceId;
@@ -61,6 +62,8 @@ public final class CdsiV2Service {
   }
 
   public Single<NetworkResult<Response>> getRegisteredUsers(String username, String password, Request request, Consumer<byte[]> tokenSaver) {
+    //Log.d("CDSI", "getRegisteredUsers called. request=" + gson.toJson(request));
+    //Log.d("TAG", "username=" + mask(username) + " password=" + (password != null ? "•••" : "null"));
     return cdsiRequestHandler
         .handleRequest(username, password, request, tokenSaver)
         .collect(Collectors.toList())
@@ -77,6 +80,9 @@ public final class CdsiV2Service {
         })
         .onErrorReturn(error -> {
           if (error instanceof NonSuccessfulResponseCodeException) {
+            NonSuccessfulResponseCodeException ex = (NonSuccessfulResponseCodeException) error;
+            Log.w("CDSI", "Non-2xx: code=" + ex.code + " body=" + ex.getStringBody());
+            Log.w("CDSI", "Response headers: " + ex.getHeaders());
             return new NetworkResult.StatusCodeError<>((NonSuccessfulResponseCodeException) error);
           } else if (error instanceof IOException) {
             return new NetworkResult.NetworkError<>((IOException) error);

@@ -11,6 +11,7 @@ import com.google.i18n.phonenumbers.Phonenumber
 import org.signal.core.util.logging.Log
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.registration.data.network.Challenge
+import org.thoughtcrime.securesms.registration.data.network.QeponRegisterAccountResult
 import org.thoughtcrime.securesms.registration.data.network.RegisterAccountResult
 import org.thoughtcrime.securesms.registration.data.network.RegistrationSessionResult
 import org.thoughtcrime.securesms.registration.data.network.VerificationCodeRequestResult
@@ -53,7 +54,12 @@ data class RegistrationState(
   val networkError: Throwable? = null,
   val sessionCreationError: RegistrationSessionResult? = null,
   val sessionStateError: VerificationCodeRequestResult? = null,
-  val registerAccountError: RegisterAccountResult? = null
+  val registerAccountError: RegisterAccountResult? = null,
+
+  //QEPON UPDATE
+  val qeponIdRegistered: Boolean = false,
+  val qeponRegistrationResult: QeponRegisterAccountResult? = null,
+  val matchedQeponId: String? = null
 ) {
   val challengesRemaining: List<Challenge> = challengesRequested.filterNot { it in challengesPresented }
 

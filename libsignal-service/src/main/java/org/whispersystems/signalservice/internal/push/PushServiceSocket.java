@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.squareup.wire.Message;
 
+
 import org.signal.core.util.Base64;
 import org.signal.libsignal.protocol.InvalidKeyException;
 import org.signal.libsignal.protocol.logging.Log;
@@ -129,6 +130,7 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -146,6 +148,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.internal.http2.StreamResetException;
+import okhttp3.logging.HttpLoggingInterceptor;
 
 /**
  * @author Moxie Marlinspike
@@ -183,6 +186,9 @@ public class PushServiceSocket {
 
   private static final String ARCHIVE_MEDIA_DOWNLOAD_PATH = "backups/%s/%s";
 
+  /* NEO QEPON 2025 */
+  private static final String REGISTRATION_PATH_QEPON    = "/v1/registration/qepon";
+
   private static final Map<String, String> NO_HEADERS                         = Collections.emptyMap();
   private static final ResponseCodeHandler NO_HANDLER                         = new EmptyResponseCodeHandler();
   private static final ResponseCodeHandler UNOPINIONATED_HANDLER              = new UnopinionatedResponseCodeHandler();
@@ -214,6 +220,22 @@ public class PushServiceSocket {
     this.credentialsProvider       = credentialsProvider;
     this.signalAgent               = signalAgent;
     this.automaticNetworkRetry     = automaticNetworkRetry;
+
+    // TAMBAHKAN LOGGING INI
+    Log.e(TAG, "===========================================");
+    Log.e(TAG, "CREDENTIALS PROVIDER INFO");
+    Log.e(TAG, "E164: " + credentialsProvider.getE164());
+    Log.e(TAG, "ACI: " + credentialsProvider.getAci());
+    Log.e(TAG, "PNI: " + credentialsProvider.getPni());
+    Log.e(TAG, "Device ID: " + credentialsProvider.getDeviceId());
+
+    // Log partial password (first 10 chars for security)
+    String password = credentialsProvider.getPassword();
+    if (password != null && password.length() > 10) {
+      Log.e(TAG, "Password (partial): " + password.substring(0, 10) + "...");
+    }
+    Log.e(TAG, "===========================================");
+
     this.serviceClients            = createServiceConnectionHolders(configuration.getSignalServiceUrls(), configuration.getNetworkInterceptors(), configuration.getDns(), configuration.getSignalProxy());
     this.cdnClientsMap             = createCdnClientsMap(configuration.getSignalCdnUrlMap(), configuration.getNetworkInterceptors(), configuration.getDns(), configuration.getSignalProxy());
     this.storageClients            = createConnectionHolders(configuration.getSignalStorageUrls(), configuration.getNetworkInterceptors(), configuration.getDns(), configuration.getSignalProxy());
@@ -280,6 +302,58 @@ public class PushServiceSocket {
     try (Response response = makeServiceRequest(path, "PUT", jsonRequestBody(JsonUtil.toJson(body)), NO_HEADERS, new SubmitVerificationCodeResponseHandler(), SealedSenderAccess.NONE, false)) {
       return parseSessionMetadataResponse(response);
     }
+  }
+
+  public QeponVerifyAccountResponse submitRegistrationRequestQepon(List<String> usernameHashes, AccountAttributes attributes, PreKeyCollection aciPreKeys, PreKeyCollection pniPreKeys, @Nullable String fcmToken) throws IOException {
+    String path = REGISTRATION_PATH_QEPON;
+
+    GcmRegistrationId gcmRegistrationId;
+    if (attributes.getFetchesMessages()) {
+      gcmRegistrationId = null;
+    } else {
+      gcmRegistrationId = new GcmRegistrationId(fcmToken, true);
+    }
+
+    QeponRegistrationSessionRequestBody body;
+    try {
+      final SignedPreKeyEntity aciSignedPreKey = new SignedPreKeyEntity(Objects.requireNonNull(aciPreKeys.getSignedPreKey()).getId(),
+                                                                        aciPreKeys.getSignedPreKey().getKeyPair().getPublicKey(),
+                                                                        aciPreKeys.getSignedPreKey().getSignature());
+      final SignedPreKeyEntity pniSignedPreKey = new SignedPreKeyEntity(Objects.requireNonNull(pniPreKeys.getSignedPreKey()).getId(),
+                                                                        pniPreKeys.getSignedPreKey().getKeyPair().getPublicKey(),
+                                                                        pniPreKeys.getSignedPreKey().getSignature());
+      final KyberPreKeyEntity aciLastResortKyberPreKey = new KyberPreKeyEntity(Objects.requireNonNull(aciPreKeys.getLastResortKyberPreKey()).getId(),
+                                                                               aciPreKeys.getLastResortKyberPreKey().getKeyPair().getPublicKey(),
+                                                                               aciPreKeys.getLastResortKyberPreKey().getSignature());
+      final KyberPreKeyEntity pniLastResortKyberPreKey = new KyberPreKeyEntity(Objects.requireNonNull(pniPreKeys.getLastResortKyberPreKey()).getId(),
+                                                                               pniPreKeys.getLastResortKyberPreKey().getKeyPair().getPublicKey(),
+                                                                               pniPreKeys.getLastResortKyberPreKey().getSignature());
+
+      body = new QeponRegistrationSessionRequestBody(usernameHashes,
+                                                     attributes,
+                                                     Base64.encodeWithoutPadding(aciPreKeys.getIdentityKey().serialize()),
+                                                     Base64.encodeWithoutPadding(pniPreKeys.getIdentityKey().serialize()),
+                                                     aciSignedPreKey,
+                                                     pniSignedPreKey,
+                                                     aciLastResortKyberPreKey,
+                                                     pniLastResortKyberPreKey,
+                                                     gcmRegistrationId,
+                                                     true);
+    } catch (InvalidKeyException e) {
+      throw new AssertionError("unexpected invalid key", e);
+    }
+
+    String responseString = makeServiceRequest(path, "POST", JsonUtil.toJson(body), NO_HEADERS, new RegistrationSessionResponseHandler(), SealedSenderAccess.NONE);
+    // return JsonUtil.fromJson(response, QeponVerifyAccountResponse.class);
+    // Tambah logging
+
+    QeponVerifyAccountResponse response = JsonUtil.fromJson(responseString, QeponVerifyAccountResponse.class);
+
+    Log.e(TAG, "Registration Response:");
+    Log.e(TAG, "  UUID: " + response.getUuid());
+    Log.e(TAG, "  PNI: " + response.getPni());
+    //Log.e(TAG, "  Number: " + response.getNumber());
+    return response;
   }
 
   public VerifyAccountResponse submitRegistrationRequest(@Nullable String sessionId, @Nullable String recoveryPassword, AccountAttributes attributes, PreKeyCollection aciPreKeys, PreKeyCollection pniPreKeys, @Nullable String fcmToken, boolean skipDeviceTransfer) throws IOException {
@@ -1191,9 +1265,28 @@ public class PushServiceSocket {
 
       case 508:
         throw new ServerRejectedException();
+      case 500: {
+        // Extra logging for server errors to surface backend details in Logcat
+        String errorBody = null;
+        try {
+          errorBody = response.peekBody(1048576).string(); // peek up to 1MB
+        } catch (Exception e) {
+          Log.w(TAG, "Failed to peek error body", e);
+        }
+        Log.e(TAG, "HTTP 500 from service. message=" + responseMessage + ", body=" + errorBody);
+        throw new NonSuccessfulResponseCodeException(responseCode, "Bad response: " + responseCode + " " + responseMessage);
+      }
     }
 
     if (responseCode != 200 && responseCode != 202 && responseCode != 204 && responseCode != 207) {
+      // Generic error logging for other non-2xx responses
+      String errorBody = null;
+      try {
+        errorBody = response.peekBody(1048576).string();
+      } catch (Exception e) {
+        Log.w(TAG, "Failed to peek error body", e);
+      }
+      Log.e(TAG, "Non-success response. code=" + responseCode + ", message=" + responseMessage + ", body=" + errorBody);
       throw new NonSuccessfulResponseCodeException(responseCode, "Bad response: " + responseCode + " " + responseMessage);
     }
 
@@ -1209,8 +1302,15 @@ public class PushServiceSocket {
       throws PushNetworkException
   {
     try {
+      Request request = buildServiceRequest(urlFragment, method, body, headers,
+                                            sealedSenderAccess,
+                                            doNotAddAuthenticationOrUnidentifiedAccessKey);
       OkHttpClient okHttpClient = buildOkHttpClient(sealedSenderAccess != null);
-      Call         call         = okHttpClient.newCall(buildServiceRequest(urlFragment, method, body, headers, sealedSenderAccess, doNotAddAuthenticationOrUnidentifiedAccessKey));
+      Call         call         = okHttpClient.newCall(request);
+
+
+      // 🔍 Tambahan log untuk cek host
+      Log.e(TAG, "Connecting to host: " + request.url().host());
 
       synchronized (connections) {
         connections.add(call);
@@ -1232,7 +1332,11 @@ public class PushServiceSocket {
     ServiceConnectionHolder connectionHolder = (ServiceConnectionHolder) getRandom(serviceClients, random);
     OkHttpClient            baseClient       = unidentified ? connectionHolder.getUnidentifiedClient() : connectionHolder.getClient();
 
+    HttpLoggingInterceptor logging = new HttpLoggingInterceptor(message -> Log.e(TAG, message));
+    logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+
     return baseClient.newBuilder()
+                     .addInterceptor(logging)
                      .connectTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS)
                      .readTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS)
                      .retryOnConnectionFailure(automaticNetworkRetry)
@@ -1357,8 +1461,13 @@ public class PushServiceSocket {
 
   public CallingResponse makeCallingRequest(long requestId, String url, String httpMethod, List<Pair<String, String>> headers, byte[] body) {
     ConnectionHolder connectionHolder = getRandom(serviceClients, random);
+
+    HttpLoggingInterceptor logging = new HttpLoggingInterceptor(message -> Log.e(TAG, message));
+    logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+
     OkHttpClient     okHttpClient     = connectionHolder.getClient()
                                                         .newBuilder()
+                                                        .addInterceptor(logging)
                                                         .followRedirects(false)
                                                         .connectTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS)
                                                         .readTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -1369,17 +1478,48 @@ public class PushServiceSocket {
                                              .url(url)
                                              .method(httpMethod, requestBody);
 
+    // TAMBAHKAN LOGGING DETAIL
+    Log.e(TAG, "==========================================");
+    Log.e(TAG, "CALLING REQUEST DEBUG");
+    Log.e(TAG, "URL: " + url);
+    Log.e(TAG, "Method: " + httpMethod);
+
     if (headers != null) {
+      Log.e(TAG, "Headers count: " + headers.size());
       for (Pair<String, String> header : headers) {
         builder.addHeader(header.first(), header.second());
+        // Log header tapi hide sensitive data
+        String value = header.second();
+        if (value.length() > 50) {
+          value = value.substring(0, 50) + "...";
+        }
+        Log.e(TAG, "  Header: " + header.first() + " = " + value);
       }
+    } else {
+      Log.e(TAG, "Headers: NULL");
     }
+
+    if (body != null) {
+      Log.e(TAG, "Body length: " + body.length);
+    }
+    Log.e(TAG, "==========================================");
 
     Request request = builder.build();
 
     for (int i = 0; i < MAX_FOLLOW_UPS; i++) {
       try (Response response = okHttpClient.newCall(request).execute()) {
         int responseStatus = response.code();
+
+        // LOG RESPONSE
+        Log.e(TAG, "Response status: " + responseStatus);
+
+        if (responseStatus == 401) {
+          Log.e(TAG, "401 UNAUTHORIZED!");
+          Log.e(TAG, "Response headers:");
+          for (String headerName : response.headers().names()) {
+            Log.e(TAG, "  " + headerName + ": " + response.header(headerName));
+          }
+        }
 
         if (responseStatus != 307) {
           return new CallingResponse.Success(requestId,

@@ -492,7 +492,9 @@ open class RecipientTable(context: Context, databaseHelper: SignalDatabase) : Da
     }
 
     Log.d(TAG, "[getAndPossiblyMerge] Requires a transaction.")
+    android.util.Log.e("RECIPIENTTABLE", "nomor: $e164")
     val e164 = e164?.let { SignalE164Util.formatAsE164(it) }
+    android.util.Log.e("RECIPIENTTABLE", "nomor: $e164")
     require(aci != null || pni != null || e164 != null) { "E164 was improperly formatted!" }
 
     val db = writableDatabase

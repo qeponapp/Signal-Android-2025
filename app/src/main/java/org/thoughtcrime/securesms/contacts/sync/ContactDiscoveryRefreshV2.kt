@@ -275,7 +275,10 @@ object ContactDiscoveryRefreshV2 {
   }
 
   private fun Set<String>.toE164s(): Set<String> {
-    return this.mapNotNull { SignalE164Util.formatAsE164(it) }.toSet()
+    return this.mapNotNull {
+      //SignalE164Util.formatAsE164(it)
+      it
+    }.toSet()
   }
 
   private fun Set<String>.sanitize(): Set<String> {
